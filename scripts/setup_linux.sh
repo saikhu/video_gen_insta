@@ -75,9 +75,9 @@ fi
 # PyTorch with CUDA 12.x wheels (3090 = sm_86). Pin the index so uv never picks a CPU wheel.
 .venv/bin/python -c "import torch, sys; sys.exit(0 if torch.cuda.is_available() else 1)" 2>/dev/null \
   || uv pip install --python .venv/bin/python torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
-uv pip install --python .venv/bin/python -r requirements.txt -q
+uv pip install --python .venv/bin/python -r requirements.txt
 # SageAttention 1.x: pure-Triton kernels, works on Ampere (SageAttention 2/3 need Ada/Blackwell builds).
-uv pip install --python .venv/bin/python "sageattention==1.0.6" triton -q || warn "sageattention install failed; drop --use-sage-attention from the service unit"
+uv pip install --python .venv/bin/python "sageattention==1.0.6" triton || warn "sageattention install failed; drop --use-sage-attention from the service unit"
 .venv/bin/python -c "import torch; print('   torch', torch.__version__, 'cuda', torch.version.cuda, 'gpus', torch.cuda.device_count())"
 ok "ComfyUI $(git rev-parse --short HEAD) with venv"
 
@@ -95,8 +95,8 @@ ok "extra_model_paths.yaml → $MODELS_DIR"
 say "vgi (pipeline) at $REPO_DIR"
 cd "$REPO_DIR"
 uv python pin 3.12 >/dev/null 2>&1 || true
-uv sync --extra dev --extra tts --extra qa -q
-uv pip install --python .venv/bin/python huggingface_hub -q
+uv sync --extra dev --extra tts --extra qa          # torch (~3 GB on Linux) + kokoro: several minutes, progress shown
+uv pip install --python .venv/bin/python huggingface_hub
 [ -f .env ] || cp .env.example .env
 mkdir -p models
 [ -f models/face_detection_yunet_2023mar.onnx ] || curl -sSL -o models/face_detection_yunet_2023mar.onnx \
