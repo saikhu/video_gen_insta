@@ -2,8 +2,8 @@
 # One-shot, idempotent setup of the vgi render farm on a Linux box with NVIDIA GPUs.
 # Run as your normal user (sudo only for apt/systemd). Re-running is safe; finished steps are skipped.
 #
-#   git clone git@github.com:saikhu/video_gen_insta.git ~/video_gen_insta
-#   cd ~/video_gen_insta && bash scripts/setup_linux.sh            # everything
+#   git clone git@github.com:saikhu/video_gen_insta.git && cd video_gen_insta   # clone on the disk with space
+#   bash scripts/setup_linux.sh                                    # everything
 #   bash scripts/setup_linux.sh --inspect                          # only report GPUs/driver/RAM/disk
 #   bash scripts/setup_linux.sh --no-systemd                       # skip services (use scripts/comfy_tmux.sh)
 #   bash scripts/setup_linux.sh --skip-models                      # skip the ~97 GB download
@@ -89,7 +89,7 @@ chmod +x "$REPO_DIR"/scripts/*.sh
 clone_node https://github.com/city96/ComfyUI-GGUF.git ComfyUI-GGUF
 clone_node https://github.com/kijai/ComfyUI-KJNodes.git ComfyUI-KJNodes
 clone_node https://github.com/Fannovel16/ComfyUI-Frame-Interpolation.git ComfyUI-Frame-Interpolation
-sed "s|base_path: /opt/comfy/models|base_path: $MODELS_DIR|" "$REPO_DIR/comfy/extra_model_paths.yaml" > "$COMFY_ROOT/ComfyUI/extra_model_paths.yaml"
+sed "s|__MODELS_DIR__|$MODELS_DIR|" "$REPO_DIR/comfy/extra_model_paths.yaml" > "$COMFY_ROOT/ComfyUI/extra_model_paths.yaml"
 ok "extra_model_paths.yaml → $MODELS_DIR"
 
 # ---------------------------------------------------------------- 4. vgi itself

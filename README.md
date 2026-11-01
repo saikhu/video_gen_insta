@@ -45,7 +45,7 @@ platform policy constraints and the cost/revenue verdict live in `docs/` and the
 | Narration (Kokoro-82M, lexicon IPA, engine word timings) | **verified** |
 | Captions (ASS karaoke, honorific → ﷺ merge, safe zones) | **verified** |
 | Assembly (xfade, two-pass loudnorm −14 LUFS, faststart) and QA (spec, YuNet faces, loudness) | **verified** |
-| Motion video (LTX-2.5 on the Linux box via ComfyUI) | client, verified model manifest, `scripts/setup_linux.sh` runbook written; **run it on the box** (`docs/SETUP_LINUX.md`) |
+| Motion video (LTX-2.5 on the Linux box via ComfyUI) | farm installed on a 4×4090 box, models pulled, four instances running; **workflow templates still to export** (`docs/SETUP_LINUX.md` §3) |
 | Memes track end to end, ACE-Step music, Fish Drama 3 voice | v1.5 |
 | Instagram API publishing (`is_ai_generated=true`, R2 hosting) | v2 |
 
@@ -72,7 +72,32 @@ uv run vgi qa <job> && uv run vgi export <job>    # → 09_final/{<job>.mp4, cov
 
 `uv run vgi run <job> --dry-run` pushes a placeholder reel through every stage with no models or
 API key (the test suite does the same). `uv run vgi jobs`, `vgi logs <job> --stage video` and
-`vgi doctor --env linux_2x3090` are the day-to-day inspection commands.
+`vgi doctor` are the day-to-day inspection commands.
+
+## Linux render farm (ComfyUI, one instance per GPU)
+
+Clone the repo on the disk with ≥ 150 GB free and run one script; everything it installs stays
+**inside the repo folder** and is gitignored:
+
+| what | where | ignored |
+|---|---|---|
+| ComfyUI + venv, per-GPU output/temp | `runtime/comfy/` | yes |
+| model files (~97 GB, verified names in `comfy/models.yaml`) | `models/<subfolder>/` | yes |
+| job outputs | `outputs/jobs/` | yes |
+
+```bash
+git clone git@github.com:saikhu/video_gen_insta.git && cd video_gen_insta
+cp .env.example .env            # HF_TOKEN=hf_... (gated LTX-2.5 repo: accept its terms on huggingface.co first)
+bash scripts/setup_linux.sh     # --inspect | --skip-models | --no-systemd (then scripts/comfy_tmux.sh)
+bash scripts/comfy_smoke.sh     # health + VRAM per endpoint, then `vgi doctor`
+```
+
+The env profile is chosen by GPU count (`linux_4x4090` for four GPUs, `linux_2x3090` otherwise;
+`VGI_ENV` overrides). Instance N serves GPU N on port 8188+N as the systemd unit `comfy@N`
+(`journalctl -u comfy@0 -f`). The one manual step is exporting the ComfyUI workflows in API format
+with `{{placeholders}}` into `comfy/workflows/`; the table of templates and placeholders is in
+[docs/SETUP_LINUX.md](docs/SETUP_LINUX.md). From the Mac, `ssh -N -L 8188:127.0.0.1:8188 <box>` and
+`comfy.endpoints` in `configs/env/mac_m5max.yaml` let the laptop drive the farm.
 
 ## Parameter files
 
@@ -105,7 +130,9 @@ src/vgi/
   backends/              comfy_client.py, image/{mflux,comfy}, video/{ken_burns,comfy_video}, tts/kokoro
   media/                 ffmpeg.py (segments, xfade, loudnorm, Ken Burns), ass.py (karaoke), images.py
 comfy/                   API-format workflow templates (to export), models.yaml, custom_nodes.txt, systemd unit
+scripts/                 setup_linux.sh (idempotent install), comfy_instance.sh, comfy_tmux.sh, comfy_smoke.sh
 configs/                 all parameters (see above)
+runtime/ models/ outputs/   created by the scripts/pipeline, gitignored
 data/corpus/islamic/     open-license source texts (gitignored except README)
 docs/                    SETUP_MAC.md · SETUP_LINUX.md · POLICY.md · LEARNING_PATH.md
 tests/                   config precedence, state machine, caching, caption math, full dry run

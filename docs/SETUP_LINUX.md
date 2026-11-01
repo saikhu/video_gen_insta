@@ -18,8 +18,8 @@ Estimated time: 20 min of commands + 1-3 h of model downloads depending on bandw
 ## 1. Clone the repo and run the setup script
 
 ```bash
-git clone git@github.com:saikhu/video_gen_insta.git ~/video_gen_insta     # or https://github.com/saikhu/video_gen_insta.git
-cd ~/video_gen_insta
+git clone git@github.com:saikhu/video_gen_insta.git     # on the filesystem with >= 150 GB free; everything stays inside this folder
+cd video_gen_insta
 bash scripts/setup_linux.sh --inspect          # just reports GPUs, driver, RAM, disk, ffmpeg/libass
 ```
 
@@ -37,12 +37,12 @@ What the script does, in order (each step is skipped when already done):
 | 1 | `apt install git ffmpeg espeak-ng build-essential tmux`, installs `uv` | system |
 | 2 | clones ComfyUI, creates `.venv`, installs PyTorch **cu128** wheels, ComfyUI requirements, `sageattention==1.0.6` + triton | `runtime/comfy/ComfyUI` |
 | 3 | clones ComfyUI-GGUF, KJNodes, Frame-Interpolation; writes `extra_model_paths.yaml` pointing at the shared models dir | `runtime/comfy/ComfyUI/custom_nodes`, `models/` |
-| 4 | `uv sync` for vgi (`dev`, `tts`, `qa` extras), downloads the YuNet face model | `~/video_gen_insta` |
+| 4 | `uv sync` for vgi (`dev`, `tts`, `qa` extras), downloads the YuNet face model | repo root (`.venv/`, `models/`) |
 | 5 | `vgi models pull` from `comfy/models.yaml` (~97 GB: LTX-2.5 39.7, Wan 2.2 37.8, Z-Image 14.6, SeedVR2 4; resumable; add `--include-optional` for FLUX) | `models/<subfolder>` |
-| 6 | installs `comfy@.service`, enables `comfy@0` (GPU 0, port 8188) and `comfy@1` (GPU 1, port 8189) | systemd |
+| 6 | installs `comfy@.service` and starts one instance per GPU: `comfy@N` on port 8188+N (`scripts/comfy_instance.sh`) | systemd |
 
 Flags: `--no-systemd` (then `bash scripts/comfy_tmux.sh` starts both instances in tmux), `--skip-models`.
-Overrides: `COMFY_ROOT=/data/comfy MODELS_DIR=/data/models bash scripts/setup_linux.sh`.
+Overrides (only if you want ComfyUI or the models outside the repo): `COMFY_ROOT=<dir> MODELS_DIR=<dir> bash scripts/setup_linux.sh`.
 
 **Layout:** everything the script installs stays inside the repo and is gitignored: `runtime/comfy/ComfyUI`
 (+ its venv), `models/<subfolder>`, `outputs/jobs`. So clone the repo on the disk with space (on the `training`
@@ -86,7 +86,6 @@ step the tutorial uses (24 GB). Commit the JSON files (`git add comfy/workflows/
 ## 4. First real clip and benchmark
 
 ```bash
-cd ~/video_gen_insta
 uv run vgi new --topic islamic_battles --subject "Battle of Badr" --env linux_2x3090
 uv run vgi plan <job>            # Claude if ANTHROPIC_API_KEY is set, else stub; keyframes via FLUX 3 Klein on GPU
 uv run vgi approve <job>
