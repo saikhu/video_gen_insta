@@ -202,12 +202,17 @@ def export(job: str, env: str = None) -> None:
 
 @app.command()
 def run(job: str, env: str = None, from_: str = typer.Option(None, "--from"), until: str = typer.Option(None, "--until"),
-        dry_run: bool = False, auto_approve: bool = False, force: bool = False) -> None:
+        dry_run: bool = False, auto_approve: bool = False, force: bool = False,
+        scene: list[int] = typer.Option(None, help="only these scene ids (keyframes/video stages)"),
+        reseed: int = typer.Option(0, help="bump seed_base (use with --scene to re-roll one scene)")) -> None:
     """Run a slice of the full DAG. --dry-run implies --auto-approve and stub backends."""
     root = find_root()
     j = _job(root, job)
     names = slice_stages(from_, until)
-    ctx = make_ctx(root, j, env, dry_run, force)
+    if "video" in names and "tts" not in names and not (j.dir("tts") / "tts.json").exists():
+        names = ["tts", *names]          # clip lengths come from narration; run tts first automatically
+        console.print("[dim]tts has not run yet; running it first[/dim]")
+    ctx = make_ctx(root, j, env, dry_run, force or bool(scene), scene, reseed)
     for n in names:
         if n == "tts" and not j.is_approved():
             if dry_run or auto_approve:

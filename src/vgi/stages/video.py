@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -48,33 +50,43 @@ class VideoStage(Stage):
         seeds: list[int] = []
         prompt_ids: list[str] = []
         notes: list[str] = []
-        for s in plan.scenes:
-            if ctx.scene_filter and s.id not in ctx.scene_filter:
-                continue
+        targets = [s for s in plan.scenes if not ctx.scene_filter or s.id in ctx.scene_filter]
+        workers = primary.workers if primary is not None else max(1, min(4, (os.cpu_count() or 4) // 2))
+
+        def render(s) -> dict[str, Any]:
             kf = ctx.job.path / chosen_keyframe(ctx, s.id, s.keyframe_choice)
             secs = scene_seconds(durs[s.id], vc.xfade_seconds, vc.tail_seconds)
             frames = frames_for(secs, vc.fps, vc.frame_grid)
             seed = derive_seed(ctx.seed_base, s.id, 0, "video")
             out = out_dir / f"scene_{s.id:02d}.mp4"
-            used = "ken_burns"
+            used, note, pid = "ken_burns", None, None
             prompt, neg = build_prompt(ctx, f"{s.visual_prompt}. {s.motion_prompt}")
             if primary is not None:
                 try:
                     self._generate_chained(ctx, primary, kf, out, secs, frames, seed, prompt, neg, s.id)
                     used = primary.name
-                    pid = out.with_suffix(".prompt_id")
-                    if pid.exists():
-                        prompt_ids.append(pid.read_text().strip())
+                    pf = out.with_suffix(".prompt_id")
+                    pid = pf.read_text().strip() if pf.exists() else None
                 except Exception as e:  # noqa: BLE001
                     log.warn(f"scene {s.id}: {primary.name} failed ({e}); falling back to {vc.fallback}")
-                    notes.append(f"scene {s.id}: fallback ken_burns after error: {str(e)[:160]}")
+                    note = f"scene {s.id}: fallback ken_burns after error: {str(e)[:160]}"
                     fallback.generate(kf, out, secs, seed)
             else:
                 fallback.generate(kf, out, secs, seed)
-            seeds.append(seed)
-            clips.append({"scene_id": s.id, "path": f"06_clips/{out.name}", "seconds": secs, "frames": frames,
-                          "backend": used, "seed": seed, "narration_seconds": durs[s.id]})
             log.info(f"scene {s.id}: {secs:.2f}s ({frames} frames) via {used}")
+            return {"scene_id": s.id, "path": f"06_clips/{out.name}", "seconds": secs, "frames": frames, "backend": used,
+                    "seed": seed, "narration_seconds": durs[s.id], "_note": note, "_pid": pid}
+
+        log.info(f"rendering {len(targets)} scenes with {workers} worker(s)")
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            results = list(ex.map(render, targets))
+        for r in sorted(results, key=lambda r: r["scene_id"]):
+            seeds.append(r["seed"])
+            if r["_note"]:
+                notes.append(r["_note"])
+            if r["_pid"]:
+                prompt_ids.append(r["_pid"])
+            clips.append({k: v for k, v in r.items() if not k.startswith("_")})
         (out_dir / "clips.json").write_text(json.dumps(clips, indent=2), encoding="utf-8")
         return StageResult(artifacts=["06_clips/clips.json", *[c["path"] for c in clips]], seeds=seeds,
                            prompt_ids=prompt_ids, notes=notes, backend=primary.name if primary else "ken_burns")

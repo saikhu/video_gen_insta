@@ -173,23 +173,52 @@ def fill_workflow(template: dict[str, Any], values: dict[str, Any]) -> dict[str,
 
 
 class EndpointPool:
-    """Round-robin over healthy endpoints, one in-flight job per endpoint."""
+    """One in-flight job per endpoint. `acquire()` blocks until a healthy endpoint is free; callers release it.
+
+    Thread-safe: the video stage renders scenes concurrently with as many workers as there are endpoints,
+    so each worker holds exactly one ComfyUI instance (and its websocket) at a time.
+    """
 
     def __init__(self, endpoints: list[str]):
+        import queue
+        import threading
+
         self.clients = [ComfyClient(e) for e in endpoints]
-        self._i = 0
+        self._free: "queue.Queue[ComfyClient]" = queue.Queue()
+        self._lock = threading.Lock()
+        self._healthy = [c for c in self.clients if c.healthy()]
+        for c in self._healthy:
+            self._free.put(c)
+
+    @property
+    def size(self) -> int:
+        return len(self._healthy)
 
     def healthy(self) -> list[ComfyClient]:
-        return [c for c in self.clients if c.healthy()]
+        return list(self._healthy)
+
+    def acquire(self, timeout_s: float = 3600.0) -> ComfyClient:
+        import queue
+
+        if not self._healthy:
+            raise ComfyError("no healthy ComfyUI endpoint")
+        try:
+            return self._free.get(timeout=timeout_s)
+        except queue.Empty as e:
+            raise ComfyError("timed out waiting for a free ComfyUI endpoint") from e
+
+    def release(self, client: ComfyClient) -> None:
+        self._free.put(client)
 
     def next(self) -> ComfyClient:
-        hs = self.healthy()
-        if not hs:
+        """Non-blocking convenience for single-shot use (image backend); prefer acquire/release in loops."""
+        if not self._healthy:
             raise ComfyError("no healthy ComfyUI endpoint")
-        c = hs[self._i % len(hs)]
-        self._i += 1
+        with self._lock:
+            c = self._healthy[0]
+            self._healthy.append(self._healthy.pop(0))
         return c
 
     def free_all(self) -> None:
-        for c in self.healthy():
+        for c in self._healthy:
             c.free()

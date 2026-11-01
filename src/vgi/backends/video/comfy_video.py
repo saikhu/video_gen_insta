@@ -28,31 +28,38 @@ class ComfyVideoBackend:
     def generate(self, keyframe: Path, out: Path, seconds: float, seed: int, *, prompt: str, negative: str,
                  frames: int, width: int, height: int, steps: int, fps: int, prefix: str,
                  last_frame: Path | None = None, upscale: int = 1, **_) -> Path:
-        client = self.pool.next()
-        image_ref = client.upload_image(keyframe)
-        values = {"image": image_ref, "prompt": prompt, "negative": negative, "seed": seed, "frames": frames,
-                  "width": width, "height": height, "final_width": width * upscale, "final_height": height * upscale,
-                  "steps": steps, "fps": fps, "prefix": prefix}
-        name = self.workflow_i2v
-        if last_frame is not None:
-            values["last_image"] = client.upload_image(last_frame)
-            name = self.workflow_flf2v
-        wf = fill_workflow(self._template(name), values)
-        prompt_id = client.queue_prompt(wf)
-        if self.log:
-            self.log.info("queued", endpoint=client.endpoint, prompt_id=prompt_id, frames=frames)
+        client = self.pool.acquire()
         try:
-            hist = client.wait(prompt_id, self.timeout_s)
-        except ComfyError as e:
-            if "timeout" in str(e):
-                client.interrupt()
-            if "memory" in str(e).lower() or "oom" in str(e).lower():
-                client.free()
-            raise
-        files = [f for f in client.outputs(hist) if f["filename"].lower().endswith((".mp4", ".webm", ".mov"))]
-        if not files:
-            raise ComfyError("workflow produced no video file")
-        out.parent.mkdir(parents=True, exist_ok=True)
-        client.download(files[0], out)
-        out.with_suffix(".prompt_id").write_text(prompt_id)
-        return out
+            image_ref = client.upload_image(keyframe)
+            values = {"image": image_ref, "prompt": prompt, "negative": negative, "seed": seed, "frames": frames,
+                      "width": width, "height": height, "final_width": width * upscale, "final_height": height * upscale,
+                      "steps": steps, "fps": fps, "prefix": prefix}
+            name = self.workflow_i2v
+            if last_frame is not None:
+                values["last_image"] = client.upload_image(last_frame)
+                name = self.workflow_flf2v
+            wf = fill_workflow(self._template(name), values)
+            prompt_id = client.queue_prompt(wf)
+            if self.log:
+                self.log.info("queued", endpoint=client.endpoint, prompt_id=prompt_id, frames=frames, prefix=prefix)
+            try:
+                hist = client.wait(prompt_id, self.timeout_s)
+            except ComfyError as e:
+                if "timeout" in str(e):
+                    client.interrupt()
+                if "memory" in str(e).lower() or "oom" in str(e).lower():
+                    client.free()
+                raise
+            files = [f for f in client.outputs(hist) if f["filename"].lower().endswith((".mp4", ".webm", ".mov"))]
+            if not files:
+                raise ComfyError("workflow produced no video file")
+            out.parent.mkdir(parents=True, exist_ok=True)
+            client.download(files[0], out)
+            out.with_suffix(".prompt_id").write_text(prompt_id)
+            return out
+        finally:
+            self.pool.release(client)
+
+    @property
+    def workers(self) -> int:
+        return max(1, self.pool.size)

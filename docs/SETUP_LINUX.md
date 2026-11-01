@@ -97,7 +97,7 @@ The spec files in `comfy/specs/` say which node inputs get which placeholder and
 uv run vgi new --topic islamic_battles --subject "Battle of Badr"      # --env <profile> only if auto-detection is wrong
 uv run vgi plan <job>            # Claude if ANTHROPIC_API_KEY is set, else stub; keyframes via FLUX 3 Klein on GPU
 uv run vgi approve <job>
-uv run vgi run <job> --from video --until video --scene 1     # one LTX-2.5 clip; watch `vgi logs <job> --stage video`
+uv run vgi run <job> --from tts --until video --scene 1       # narration (fast, CPU) + ONE LTX-2.5 clip; watch `vgi logs <job> --stage video`
 ```
 
 Record the measured seconds per clip as a comment under `stages.video` in the env profile you used
