@@ -1,0 +1,38 @@
+# Environment profile: Linux "training" box, 4x RTX 4090 (24 GB each, Ada), 251 GB RAM. The render farm.
+# Ada has native fp8 tensor cores, so fp8 checkpoints are fast here (int8_convrot still works and is what models.yaml pulls).
+name: linux_4x4090
+hardware:
+  gpus: ["RTX 4090", "RTX 4090", "RTX 4090", "RTX 4090"]
+  vram_gb: 24
+  ram_gb: 251
+power_watts: 1900                     # 4 x ~400 W under diffusion load + ~300 W system
+electricity_krw_per_kwh: 215
+
+comfy:
+  endpoints: ["http://127.0.0.1:8188", "http://127.0.0.1:8189", "http://127.0.0.1:8190", "http://127.0.0.1:8191"]
+  dual_instance: true                 # one ComfyUI instance per GPU (systemd comfy@0..3); 251 GB RAM holds four LTX sets
+  gpu_lease: true
+  models_dir: /srv/usman/models       # the 1 TB /srv volume; root (/) is 96% full
+  sage_attention: true                # SageAttention 1.0.6 (Triton) works on Ada; v2 needs a source build
+  quant: int8_convrot
+
+stages:
+  keyframes:
+    backend: comfy
+    workflow: image_z_image_turbo
+    model: z_image_turbo
+  video:
+    backend: comfy
+    model: ltx25
+    workflow_i2v: video_ltx25_i2v
+    workflow_flf2v: video_ltx25_flf2v
+    # measured seconds per 5 s clip: (fill in after the first benchmark, docs/SETUP_LINUX.md step 4)
+  tts:
+    engine: kokoro
+    device: cpu
+  music:
+    engine: none
+  captions:
+    timing_provider: engine
+  qa:
+    face_check: true

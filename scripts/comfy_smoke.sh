@@ -2,7 +2,7 @@
 # Smoke test every ComfyUI endpoint from configs/env/linux_2x3090.yaml: health, VRAM, queue, and a workflow dry-validate.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
-for port in 8188 8189; do
+for port in 8188 8189 8190 8191; do
   if curl -sf "http://127.0.0.1:$port/system_stats" >/dev/null; then
     uv run python - "$port" <<'PY'
 import sys
@@ -15,4 +15,4 @@ PY
     echo "http://127.0.0.1:$port: DOWN"
   fi
 done
-uv run vgi doctor --env linux_2x3090
+uv run vgi doctor --env "${VGI_ENV:-linux_2x3090}"

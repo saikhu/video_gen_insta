@@ -1,4 +1,4 @@
-# Linux render farm runbook (2×RTX 3090, ~128 GB RAM)
+# Linux render farm runbook (2×RTX 3090 or 4×RTX 4090)
 
 You run these on the Linux box yourself. Everything is idempotent: re-run a step if it fails.
 Estimated time: 20 min of commands + 1-3 h of model downloads depending on bandwidth.
@@ -43,6 +43,16 @@ What the script does, in order (each step is skipped when already done):
 
 Flags: `--no-systemd` (then `bash scripts/comfy_tmux.sh` starts both instances in tmux), `--skip-models`.
 Overrides: `COMFY_ROOT=/data/comfy MODELS_DIR=/data/models bash scripts/setup_linux.sh`.
+
+**The `training` box (4×4090, 251 GB RAM):** root is 96% full, `/srv` has ~465 GB. Use
+
+```bash
+export VGI_ENV=linux_4x4090 COMFY_ROOT=/srv/usman/comfy MODELS_DIR=/srv/usman/models
+mkdir -p /srv/usman/vgi_outputs && ln -sfn /srv/usman/vgi_outputs outputs      # job outputs off the full root disk
+bash scripts/setup_linux.sh
+```
+
+and add `export VGI_ENV=linux_4x4090` to `~/.bashrc` so every `vgi` command picks the 4-GPU profile.
 
 ## 2. Verify
 

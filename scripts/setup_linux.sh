@@ -8,7 +8,8 @@
 #   bash scripts/setup_linux.sh --no-systemd                       # skip services (use scripts/comfy_tmux.sh)
 #   bash scripts/setup_linux.sh --skip-models                      # skip the ~60 GB download
 #
-# Env overrides: COMFY_ROOT (default /opt/comfy), MODELS_DIR (default $COMFY_ROOT/models), HF_TOKEN
+# Env overrides: COMFY_ROOT (default /opt/comfy), MODELS_DIR (default $COMFY_ROOT/models), VGI_ENV (env profile
+#   used for `vgi models pull`, default linux_2x3090), HF_TOKEN
 set -euo pipefail
 
 COMFY_ROOT="${COMFY_ROOT:-/opt/comfy}"
@@ -31,9 +32,11 @@ nvidia-smi --query-gpu=index,name,memory.total,driver_version --format=csv,nohea
 GPU_COUNT=$(nvidia-smi --list-gpus | wc -l)
 RAM_GB=$(awk '/MemTotal/ {printf "%d", $2/1024/1024}' /proc/meminfo)
 DISK_GB=$(df -BG --output=avail "$(dirname "$COMFY_ROOT")" 2>/dev/null | tail -1 | tr -dc '0-9' || echo 0)
+MODELS_DISK_GB=$(df -BG --output=avail "$(dirname "$MODELS_DIR")" 2>/dev/null | tail -1 | tr -dc '0-9' || echo 0)
 ok "GPUs: $GPU_COUNT · RAM: ${RAM_GB} GB · free disk under $(dirname "$COMFY_ROOT"): ${DISK_GB} GB"
-[ "$RAM_GB" -ge 64 ] && ok "RAM >= 64 GB: two ComfyUI instances can hold LTX-2.5 at once" || warn "RAM < 64 GB: run ONE video instance (set comfy.dual_instance: false in configs/env/linux_2x3090.yaml)"
-[ "$DISK_GB" -ge 120 ] || warn "need ~120 GB free for models + outputs"
+[ "$RAM_GB" -ge $((32 * GPU_COUNT)) ] && ok "RAM ${RAM_GB} GB: one ComfyUI instance per GPU fits" || warn "RAM < 64 GB: run ONE video instance (set comfy.dual_instance: false in configs/env/linux_2x3090.yaml)"
+ok "free disk under $(dirname "$MODELS_DIR") (models): ${MODELS_DISK_GB} GB"
+[ "$MODELS_DISK_GB" -ge 120 ] || warn "need ~120 GB free for models: set MODELS_DIR=/path/with/space"
 command -v python3 >/dev/null && ok "python3: $(python3 --version)"
 command -v ffmpeg >/dev/null && { ffmpeg -hide_banner -filters 2>/dev/null | grep -q ' ass ' && ok "ffmpeg with libass" || warn "ffmpeg lacks libass (captions): apt install ffmpeg usually includes it; otherwise build with --enable-libass"; } || warn "ffmpeg missing: sudo apt install -y ffmpeg"
 [ "$INSPECT_ONLY" = 1 ] && { say "Inspect-only run finished"; exit 0; }
@@ -56,8 +59,8 @@ ok "uv $(uv --version)"
 # ---------------------------------------------------------------- 2. ComfyUI
 say "ComfyUI under $COMFY_ROOT"
 sudo mkdir -p "$COMFY_ROOT" && sudo chown "$USER" "$COMFY_ROOT"
-mkdir -p "$MODELS_DIR"/{diffusion_models,unet,text_encoders,vae,loras,upscale_models,latent_upscale_models,checkpoints} \
-         "$COMFY_ROOT"/output/{0,1} "$COMFY_ROOT"/temp/{0,1}
+mkdir -p "$MODELS_DIR"/{diffusion_models,unet,text_encoders,vae,loras,upscale_models,latent_upscale_models,checkpoints}
+for i in $(seq 0 $((GPU_COUNT - 1))); do mkdir -p "$COMFY_ROOT/output/$i" "$COMFY_ROOT/temp/$i"; done
 if [ ! -d "$COMFY_ROOT/ComfyUI/.git" ]; then
   git clone --depth 1 https://github.com/comfyanonymous/ComfyUI.git "$COMFY_ROOT/ComfyUI"
 fi
@@ -102,7 +105,7 @@ if [ "$SKIP_MODELS" = 0 ]; then
   say "Model files → $MODELS_DIR (this is the long step; re-run resumes)"
   [ -n "${HF_TOKEN:-}" ] || grep -q '^HF_TOKEN=.\+' .env || warn "HF_TOKEN not set: gated repos (FLUX 3 Klein) will fail; add it to .env"
   set -a; [ -f .env ] && . ./.env; set +a
-  MODELS_DIR="$MODELS_DIR" uv run vgi models pull --env linux_2x3090
+  MODELS_DIR="$MODELS_DIR" uv run vgi models pull --env "${VGI_ENV:-linux_2x3090}"
 else
   warn "skipping model download (--skip-models)"
 fi
@@ -121,4 +124,4 @@ else
   warn "systemd skipped: start instances with  bash scripts/comfy_tmux.sh"
 fi
 
-say "Done. Next: uv run vgi doctor --env linux_2x3090 ; then export the workflow templates (docs/SETUP_LINUX.md step 6)"
+say "Done. Next: uv run vgi doctor --env ${VGI_ENV:-linux_2x3090} ; then export the workflow templates (docs/SETUP_LINUX.md step 3)"
