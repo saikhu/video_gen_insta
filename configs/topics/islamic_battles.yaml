@@ -18,6 +18,19 @@ subjects:                             # consensus events first; contested ones l
   - Battle of Yarmouk
   - Battle of al-Qadisiyyah
 
+retrieval_aliases:                    # alternative spellings used by older sources (Muir 1883, Hitti 1916) for corpus retrieval
+  "Battle of Badr": [bedr, badr]
+  "Battle of Uhud": [ohod, uhud, ohud]
+  "Battle of the Trench": [khandaq, ahzab, "the ditch", trench]
+  "Battle of Khaybar": [kheibar, khaibar, khaybar]
+  "Battle of Mu'tah": [muta, mutah, "mu'ta"]
+  "Battle of Hunayn": [honein, hunain, hunayn]
+  "Expedition of Tabuk": [tebuk, tabuk, "tebûk"]
+  "Battle of Yarmouk": [yarmuk, yermuk, "yermûk", yarmouk]
+  "Battle of al-Qadisiyyah": [qadisiya, kadisiya, cadesiya, "câdesîya", qadisiyya, "qādisiyyah", qadisiyyah]
+  "Battle of Nahavand": [nehawend, nihavand, nahavand, nehâwend]
+  "Conquest of Mecca": [mecca, makkah]
+
 honorifics:                           # spoken form is written into narration; caption form replaces it in captions
   - trigger: "peace be upon him"
     caption: "ﷺ"

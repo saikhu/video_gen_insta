@@ -326,6 +326,37 @@ def corpus_wikipedia(title: str, topic: str = "islamic_battles") -> None:
     console.print(f"[green]saved[/green] {out} ({len(page['extract'])} chars)")
 
 
+@corpus_app.command("gutenberg")
+def corpus_gutenberg(ebook_id: int, title: str = typer.Option(..., help="human title for the header"),
+                     topic: str = "islamic_battles") -> None:
+    """Fetch a public-domain Project Gutenberg plain-text ebook into the topic corpus."""
+    import httpx
+
+    root = find_root()
+    tcfg = load_yaml(root / "configs" / "topics" / f"{topic}.yaml")
+    out_dir = root / tcfg.get("corpus_dir", "data/corpus/islamic")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    ua = os.environ.get("VGI_HTTP_UA", "vgi-corpus/0.1 (+https://github.com/saikhu/video_gen_insta; research tool) python-httpx")
+    text = None
+    for url in (f"https://www.gutenberg.org/cache/epub/{ebook_id}/pg{ebook_id}.txt",
+                f"https://www.gutenberg.org/files/{ebook_id}/{ebook_id}-0.txt"):
+        r = httpx.get(url, headers={"User-Agent": ua}, timeout=60, follow_redirects=True)
+        if r.status_code == 200 and len(r.text) > 1000:
+            text = r.text
+            break
+    if text is None:
+        raise typer.BadParameter(f"could not download ebook {ebook_id}")
+    # strip the Gutenberg header/footer boilerplate
+    start = text.find("*** START OF")
+    end = text.find("*** END OF")
+    body = text[text.find("\n", start) + 1 if start != -1 else 0: end if end != -1 else None]
+    slug = "".join(c if c.isalnum() else "_" for c in title).strip("_").lower()[:60]
+    out = out_dir / f"gutenberg_{ebook_id}_{slug}.md"
+    out.write_text(f"---\ntitle: {title}\nlicense: public domain (Project Gutenberg #{ebook_id})\n"
+                   f"url: https://www.gutenberg.org/ebooks/{ebook_id}\n---\n\n" + body.strip() + "\n", encoding="utf-8")
+    console.print(f"[green]saved[/green] {out} ({len(body)} chars)")
+
+
 @models_app.command("list")
 def models_list() -> None:
     root = find_root()

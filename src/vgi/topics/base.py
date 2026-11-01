@@ -29,8 +29,9 @@ def parse_header(text: str) -> tuple[dict[str, str], str]:
     return {}, text
 
 
-def corpus_chunks(corpus_dir: Path, subject: str, chunk_chars: int, max_chunks: int, min_score: int) -> list[Doc]:
-    terms = subject_terms(subject)
+def corpus_chunks(corpus_dir: Path, subject: str, chunk_chars: int, max_chunks: int, min_score: int,
+                  extra_terms: list[str] | None = None) -> list[Doc]:
+    terms = list(dict.fromkeys(subject_terms(subject) + [t.lower() for t in (extra_terms or []) if t]))
     scored: list[tuple[int, Doc]] = []
     for p in sorted(corpus_dir.glob("*")):
         if p.suffix.lower() not in (".md", ".txt") or p.name.lower() == "readme.md":

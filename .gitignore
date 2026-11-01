@@ -3,9 +3,6 @@ __pycache__/
 *.pyc
 .env
 outputs/
-data/corpus/**/*.txt
-data/corpus/**/*.md
-!data/corpus/islamic/README.md
 data/jokes_db.sqlite
 models/
 *.onnx

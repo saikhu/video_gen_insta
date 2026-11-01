@@ -43,8 +43,10 @@ class IslamicBattlesTopic(TopicPlugin):
         subject = ctx.job.manifest.subject
         corpus_dir = ctx.root / ctx.cfg.topic.model_extra.get("corpus_dir", "data/corpus/islamic") \
             if ctx.cfg.topic.model_extra else ctx.root / "data/corpus/islamic"
-        docs: list[Doc] = corpus_chunks(corpus_dir, subject, rc.chunk_chars, rc.max_chunks, rc.min_chunk_score) \
-            if corpus_dir.exists() else []
+        aliases_cfg = (ctx.cfg.topic.model_extra or {}).get("retrieval_aliases", {}) or {}
+        aliases = next((v for k, v in aliases_cfg.items() if k.lower() == subject.lower()), [])
+        docs: list[Doc] = corpus_chunks(corpus_dir, subject, rc.chunk_chars, rc.max_chunks, rc.min_chunk_score,
+                                        extra_terms=aliases) if corpus_dir.exists() else []
         log = ctx.log.for_stage("research")
         if not docs:
             log.warn(f"no corpus chunks matched {subject!r} in {corpus_dir}; fact sheet will be uncited",
