@@ -1,25 +1,30 @@
-# Model files for the Linux render farm. `vgi models pull --env linux_2x3090` downloads them into comfy.models_dir.
-# Verified 2026-11-02 against the ComfyUI LTX-2.5 tutorial and Comfy-Org Hugging Face repos; re-check file names
-# before the first pull (repos get reorganized). All licenses commercial-OK at this project's scale.
+# Model files for the Linux render farm. `vgi models pull --env linux_2x3090` downloads them into comfy.models_dir/<dest>.
+# Repo ids, paths and sizes verified 2026-11-02 against the Hugging Face tree API and docs.comfy.org tutorials.
+# `optional: true` entries are skipped unless you pass `--include-optional`.
+#
+# ACCESS: Lightricks/LTX-2.5 and black-forest-labs/flux-3-image-klein-comfy are GATED. Open each repo page on
+# huggingface.co, accept the terms / request access, wait for approval, and put HF_TOKEN in .env before pulling.
 models:
-  # ---- LTX-2.5 (primary video; license: LTX-2 Community, free < $10M revenue, label AI content) ----
-  - {name: ltx25-transformer-int8, repo: Lightricks/LTX-2.5, file: ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors, dest: diffusion_models}
-  - {name: ltx25-text-encoder,     repo: Lightricks/LTX-2.5, file: gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors, dest: text_encoders}
-  - {name: ltx25-video-vae,        repo: Lightricks/LTX-2.5, file: ltx-2.5-video-vae.safetensors, dest: vae}
-  - {name: ltx25-audio-vae,        repo: Lightricks/LTX-2.5, file: ltx-2.5-audio-vae.safetensors, dest: vae}
-  - {name: ltx25-spatial-upscaler, repo: Lightricks/LTX-2.5, file: ltx-2.5-latent-spatial-upscaler-x2.safetensors, dest: latent_upscale_models}
-  # ---- FLUX 3 Image Klein (primary keyframes; Kommunity license, free < $5M) ----
-  - {name: flux3-klein,            repo: black-forest-labs/FLUX.3-image-klein, file: flux3-image-klein.safetensors, dest: diffusion_models}
-  # ---- Z-Image Turbo (alt keyframes, Apache) ----
-  - {name: z-image-turbo,          repo: Comfy-Org/z_image_turbo, file: split_files/diffusion_models/z_image_turbo_bf16.safetensors, dest: diffusion_models}
-  - {name: z-image-text-encoder,   repo: Comfy-Org/z_image_turbo, file: split_files/text_encoders/qwen_3_4b.safetensors, dest: text_encoders}
-  - {name: z-image-vae,            repo: Comfy-Org/z_image_turbo, file: split_files/vae/ae.safetensors, dest: vae}
-  # ---- Wan 2.2 I2V A14B (fallback video, Apache) ----
-  - {name: wan22-i2v-high-q8,      repo: QuantStack/Wan2.2-I2V-A14B-GGUF, file: HighNoise/Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf, dest: unet}
-  - {name: wan22-i2v-low-q8,       repo: QuantStack/Wan2.2-I2V-A14B-GGUF, file: LowNoise/Wan2.2-I2V-A14B-LowNoise-Q8_0.gguf, dest: unet}
-  - {name: wan-umt5,               repo: Comfy-Org/Wan_2.1_ComfyUI_repackaged, file: split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors, dest: text_encoders}
-  - {name: wan-vae,                repo: Comfy-Org/Wan_2.1_ComfyUI_repackaged, file: split_files/vae/wan_2.1_vae.safetensors, dest: vae}
-  # ---- SeedVR2 3B (fallback upscaler, native node) ----
-  - {name: seedvr2-3b-int8,        repo: Comfy-Org/SeedVR2, file: seedvr2_ema_3b_int8_convrot.safetensors, dest: upscale_models}
-  # ---- QA face detector (OpenCV YuNet, Apache) ----
-  - {name: yunet-face,             repo: opencv/opencv_zoo, file: models/face_detection_yunet/face_detection_yunet_2023mar.onnx, dest: ../models}
+  # ---- LTX-2.5 (primary video; LTX-2 community license, free under $10M revenue, must label AI content) ~39.7 GB ----
+  - {name: ltx25-transformer-int8, repo: Lightricks/LTX-2.5, file: diffusion_models/ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors, dest: diffusion_models, gb: 21.5}
+  - {name: ltx25-text-encoder,     repo: Lightricks/LTX-2.5, file: text_encoders/gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors, dest: text_encoders, gb: 15.4}
+  - {name: ltx25-video-vae,        repo: Lightricks/LTX-2.5, file: vae/ltx-2.5-video-vae-bf16.safetensors, dest: vae, gb: 1.5}
+  - {name: ltx25-audio-vae,        repo: Lightricks/LTX-2.5, file: vae/ltx-2.5-audio-vae-bf16.safetensors, dest: vae, gb: 0.4}
+  - {name: ltx25-spatial-upscaler, repo: Lightricks/LTX-2.5, file: latent_upscale_models/ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors, dest: latent_upscale_models, gb: 1.0}
+  # ---- Z-Image Turbo (keyframes, Apache 2.0) ~14.6 GB ----
+  - {name: z-image-turbo-int8,     repo: Comfy-Org/z_image_turbo, file: split_files/diffusion_models/z_image_turbo_int8_convrot.safetensors, dest: diffusion_models, gb: 6.2}
+  - {name: z-image-text-encoder,   repo: Comfy-Org/z_image_turbo, file: split_files/text_encoders/qwen_3_4b.safetensors, dest: text_encoders, gb: 8.0}
+  - {name: z-image-vae,            repo: Comfy-Org/z_image_turbo, file: split_files/vae/ae.safetensors, dest: vae, gb: 0.3}
+  # ---- Wan 2.2 I2V A14B GGUF (fallback video, Apache 2.0) ~37.8 GB; needs the ComfyUI-GGUF node ("Unet Loader (GGUF)") ----
+  - {name: wan22-i2v-high-q8,      repo: QuantStack/Wan2.2-I2V-A14B-GGUF, file: HighNoise/Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf, dest: unet, gb: 15.4}
+  - {name: wan22-i2v-low-q8,       repo: QuantStack/Wan2.2-I2V-A14B-GGUF, file: LowNoise/Wan2.2-I2V-A14B-LowNoise-Q8_0.gguf, dest: unet, gb: 15.4}
+  - {name: wan-umt5,               repo: Comfy-Org/Wan_2.1_ComfyUI_repackaged, file: split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors, dest: text_encoders, gb: 6.7}
+  - {name: wan-vae,                repo: Comfy-Org/Wan_2.1_ComfyUI_repackaged, file: split_files/vae/wan_2.1_vae.safetensors, dest: vae, gb: 0.3}
+  # ---- SeedVR2 3B (fallback upscaler; native node; disable FlashAttention on RTX 30 if frames come out black) ~4 GB ----
+  - {name: seedvr2-3b-int8,        repo: Comfy-Org/SeedVR2, file: diffusion_models/seedvr2_3b_int8_convrot.safetensors, dest: diffusion_models, gb: 3.5}
+  - {name: seedvr2-vae,            repo: Comfy-Org/SeedVR2, file: vae/seedvr2_ema_vae_fp16.safetensors, dest: vae, gb: 0.5}
+  # ---- FLUX 3 Image Klein (OPTIONAL). The HF repo card calls the FLUX Kommunity license non-commercial while other
+  #      sources say free under $5M revenue: read the license text before using it on a monetized account. ~11 GB ----
+  - {name: flux3-klein-int8,       repo: black-forest-labs/flux-3-image-klein-comfy, file: diffusion_models/flux3-image-klein-int8-convrot.safetensors, dest: diffusion_models, gb: 5.8, optional: true}
+  - {name: flux3-text-encoder,     repo: black-forest-labs/flux-3-image-klein-comfy, file: text_encoders/qwen3vl_4b_int8_convrot.safetensors, dest: text_encoders, gb: 4.9, optional: true}
+  - {name: flux3-vae,              repo: black-forest-labs/flux-3-image-klein-comfy, file: vae/flux2-vae.safetensors, dest: vae, gb: 0.3, optional: true}

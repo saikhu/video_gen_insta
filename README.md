@@ -45,7 +45,7 @@ platform policy constraints and the cost/revenue verdict live in `docs/` and the
 | Narration (Kokoro-82M, lexicon IPA, engine word timings) | **verified** |
 | Captions (ASS karaoke, honorific → ﷺ merge, safe zones) | **verified** |
 | Assembly (xfade, two-pass loudnorm −14 LUFS, faststart) and QA (spec, YuNet faces, loudness) | **verified** |
-| Motion video (LTX-2.5 on the Linux box via ComfyUI) | client + manifests written; **Phase 3 pending** (`docs/SETUP_LINUX.md`) |
+| Motion video (LTX-2.5 on the Linux box via ComfyUI) | client, verified model manifest, `scripts/setup_linux.sh` runbook written; **run it on the box** (`docs/SETUP_LINUX.md`) |
 | Memes track end to end, ACE-Step music, Fish Drama 3 voice | v1.5 |
 | Instagram API publishing (`is_ai_generated=true`, R2 hosting) | v2 |
 
@@ -116,7 +116,7 @@ tests/                   config precedence, state machine, caching, caption math
 | role | model | why |
 |---|---|---|
 | keyframes (Mac) | Z-Image Turbo via mflux (Apache) | runs in 48 GB, 8 steps, film-look realism; ignores negative prompts (exclusions are phrased positively) |
-| keyframes (Linux) | FLUX 3 Image Klein (free < $5M revenue) | top open image Elo; 10 reference images for consistency |
+| keyframes (Linux) | Z-Image Turbo int8 (Apache) by default; FLUX 3 Image Klein optional | FLUX has the top open image Elo, but its HF repo card calls the Kommunity license non-commercial while other sources say free under $5M — verify before monetizing |
 | video | LTX-2.5 int8_convrot (free < $10M) | synchronized native audio, portrait, first/last-frame chaining; Wan 2.2 (Apache) as fallback |
 | narration | Kokoro-82M (Apache) → Fish Drama 3 later | word timestamps for free; IPA overrides; Fish needs ~39 GB VRAM |
 | music | none (Islamic) / ACE-Step 1.5 (memes) | no instruments policy; LTX's diegetic audio carries ambience |

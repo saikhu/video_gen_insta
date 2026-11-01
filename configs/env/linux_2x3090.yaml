@@ -18,8 +18,8 @@ comfy:
 stages:
   keyframes:
     backend: comfy
-    workflow: image_flux3_klein
-    model: flux3_klein
+    workflow: image_z_image_turbo
+    model: z_image_turbo                # Apache; FLUX 3 Klein is optional until its license is confirmed
   video:
     backend: comfy
     model: ltx25

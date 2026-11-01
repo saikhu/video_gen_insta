@@ -369,24 +369,50 @@ def models_list() -> None:
 
 
 @models_app.command("pull")
-def models_pull(env: str = None, only: str = typer.Option(None, help="model name filter")) -> None:
+def models_pull(env: str = None, only: str = typer.Option(None, help="model name filter"),
+                include_optional: bool = typer.Option(False, "--include-optional", help="also pull entries marked optional")) -> None:
     """Download model files listed in comfy/models.yaml into the env's models_dir (needs huggingface_hub)."""
     root = find_root()
     env = env or default_env()
     envc = load_yaml(root / "configs" / "env" / f"{env}.yaml")
-    models_dir = Path(envc.get("comfy", {}).get("models_dir") or root / "models")
+    models_dir = Path(os.environ.get("MODELS_DIR") or envc.get("comfy", {}).get("models_dir") or root / "models")
     data = load_yaml(root / "comfy" / "models.yaml")
     try:
         from huggingface_hub import hf_hub_download
     except ImportError:
         raise typer.BadParameter("pip install huggingface_hub (or: uv pip install huggingface_hub)")
+    failed: list[str] = []
+    total = sum(float(m.get("gb", 0)) for m in data.get("models", []) if (include_optional or not m.get("optional")))
+    console.print(f"models dir: {models_dir}  (~{total:.0f} GB selected)")
     for m in data.get("models", []):
         if only and only not in m["name"]:
             continue
+        if m.get("optional") and not include_optional:
+            continue
         dest = models_dir / m["dest"]
         dest.mkdir(parents=True, exist_ok=True)
-        console.print(f"↓ {m['repo']}/{m['file']} → {dest}")
-        hf_hub_download(m["repo"], m["file"], local_dir=str(dest), token=os.environ.get("HF_TOKEN") or None)
+        final = dest / Path(m["file"]).name
+        if final.exists():
+            console.print(f"[dim]have[/dim] {final.name}")
+            continue
+        console.print(f"↓ {m['repo']}/{m['file']} ({m.get('gb', '?')} GB) → {final}")
+        try:
+            got = Path(hf_hub_download(m["repo"], m["file"], local_dir=str(dest), token=os.environ.get("HF_TOKEN") or None))
+            if got.resolve() != final.resolve():      # hf keeps the repo subpath under local_dir; flatten it
+                got.replace(final)
+                for parent in got.parents:
+                    if parent == dest or not parent.is_relative_to(dest):
+                        break
+                    try:
+                        parent.rmdir()
+                    except OSError:
+                        break
+        except Exception as e:  # noqa: BLE001  keep going; report at the end
+            console.print(f"[red]failed[/red] {m['name']}: {str(e)[:200]}")
+            failed.append(m["name"])
+    if failed:
+        console.print(f"[yellow]{len(failed)} download(s) failed:[/yellow] {', '.join(failed)} — check names in comfy/models.yaml")
+        raise typer.Exit(1)
     console.print("[green]done[/green]")
 
 
