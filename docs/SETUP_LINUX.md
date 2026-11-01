@@ -8,7 +8,7 @@ Estimated time: 20 min of commands + 1-3 h of model downloads depending on bandw
 - Ubuntu 22.04/24.04 (other distros work; swap `apt` for your package manager).
 - NVIDIA driver **≥ 550** with CUDA 12 support. Check: `nvidia-smi` shows both 3090s.
   If missing: `sudo ubuntu-drivers install` (or the `.run` installer) and reboot.
-- ~120 GB free disk where `/opt/comfy` will live (models ≈ 60 GB, outputs grow over time).
+- ~150 GB free disk on the filesystem where you clone the repo (models ≈ 97 GB, ComfyUI + venvs ≈ 15 GB, outputs grow).
 - A Hugging Face token (https://huggingface.co/settings/tokens) **and gated-repo access**: open
   https://huggingface.co/Lightricks/LTX-2.5 while logged in, accept the terms / request access, and wait for the
   approval email (minutes to a day). Without it every LTX download returns 401. FLUX 3 Klein
@@ -35,24 +35,19 @@ What the script does, in order (each step is skipped when already done):
 | step | what | where |
 |---|---|---|
 | 1 | `apt install git ffmpeg espeak-ng build-essential tmux`, installs `uv` | system |
-| 2 | clones ComfyUI, creates `.venv`, installs PyTorch **cu128** wheels, ComfyUI requirements, `sageattention==1.0.6` + triton | `/opt/comfy/ComfyUI` |
-| 3 | clones ComfyUI-GGUF, KJNodes, Frame-Interpolation; writes `extra_model_paths.yaml` pointing at the shared models dir | `/opt/comfy/ComfyUI/custom_nodes`, `/opt/comfy/models` |
+| 2 | clones ComfyUI, creates `.venv`, installs PyTorch **cu128** wheels, ComfyUI requirements, `sageattention==1.0.6` + triton | `runtime/comfy/ComfyUI` |
+| 3 | clones ComfyUI-GGUF, KJNodes, Frame-Interpolation; writes `extra_model_paths.yaml` pointing at the shared models dir | `runtime/comfy/ComfyUI/custom_nodes`, `models/` |
 | 4 | `uv sync` for vgi (`dev`, `tts`, `qa` extras), downloads the YuNet face model | `~/video_gen_insta` |
-| 5 | `vgi models pull --env linux_2x3090` from `comfy/models.yaml` (~97 GB: LTX-2.5 39.7, Wan 2.2 37.8, Z-Image 14.6, SeedVR2 4; resumable; add `--include-optional` for FLUX) | `/opt/comfy/models/<subfolder>` |
+| 5 | `vgi models pull` from `comfy/models.yaml` (~97 GB: LTX-2.5 39.7, Wan 2.2 37.8, Z-Image 14.6, SeedVR2 4; resumable; add `--include-optional` for FLUX) | `models/<subfolder>` |
 | 6 | installs `comfy@.service`, enables `comfy@0` (GPU 0, port 8188) and `comfy@1` (GPU 1, port 8189) | systemd |
 
 Flags: `--no-systemd` (then `bash scripts/comfy_tmux.sh` starts both instances in tmux), `--skip-models`.
 Overrides: `COMFY_ROOT=/data/comfy MODELS_DIR=/data/models bash scripts/setup_linux.sh`.
 
-**The `training` box (4×4090, 251 GB RAM):** root is 96% full, `/srv` has ~465 GB. Use
-
-```bash
-export VGI_ENV=linux_4x4090 COMFY_ROOT=/srv/usman/comfy MODELS_DIR=/srv/usman/models
-mkdir -p /srv/usman/vgi_outputs && ln -sfn /srv/usman/vgi_outputs outputs      # job outputs off the full root disk
-bash scripts/setup_linux.sh
-```
-
-and add `export VGI_ENV=linux_4x4090` to `~/.bashrc` so every `vgi` command picks the 4-GPU profile.
+**Layout:** everything the script installs stays inside the repo and is gitignored: `runtime/comfy/ComfyUI`
+(+ its venv), `models/<subfolder>`, `outputs/jobs`. So clone the repo on the disk with space (on the `training`
+box that is `/srv`, root is 96% full) and run the script with no overrides. The env profile is picked by GPU
+count (4 → `linux_4x4090`); `VGI_ENV` overrides it.
 
 ## 2. Verify
 
@@ -113,10 +108,10 @@ each machine renders the jobs in its own `outputs/`.
 
 ## 6. Day-2 operations
 
-- Update ComfyUI: `cd /opt/comfy/ComfyUI && git pull && uv pip install --python .venv/bin/python -r requirements.txt && sudo systemctl restart comfy@0 comfy@1`.
+- Update ComfyUI: `cd runtime/comfy/ComfyUI && git pull && uv pip install --python .venv/bin/python -r requirements.txt && sudo systemctl restart comfy@0 comfy@1`.
 - Free VRAM between jobs: `curl -X POST http://127.0.0.1:8188/free -d '{"unload_models":true,"free_memory":true}'`.
-- Output/temp folders: `/opt/comfy/output/<gpu>` and `/opt/comfy/temp/<gpu>`; the pipeline copies results
-  into the job folder, so these can be cleaned (`find /opt/comfy/output -mtime +7 -delete`).
+- Output/temp folders: `runtime/comfy/output/<gpu>` and `runtime/comfy/temp/<gpu>`; the pipeline copies results
+  into the job folder, so these can be cleaned (`find runtime/comfy/output -mtime +7 -delete`).
 - Power: two 3090s under load ≈ 850 W. `nvidia-smi -pl 280` per GPU trims ~20% power for ~5% speed if the room gets hot.
 
 ## Troubleshooting

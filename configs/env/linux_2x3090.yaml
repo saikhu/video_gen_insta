@@ -11,7 +11,7 @@ comfy:
   endpoints: ["http://127.0.0.1:8188", "http://127.0.0.1:8189"]   # one ComfyUI instance per GPU (systemd comfy@0, comfy@1)
   dual_instance: true                 # requires >= 64 GB RAM (two LTX-2.5 int8 sets resident); doctor checks this
   gpu_lease: true                     # POST /free on every endpoint before non-ComfyUI GPU stages
-  models_dir: /opt/comfy/models       # one shared models dir for both instances (extra_model_paths.yaml)
+  models_dir: models                  # relative to the repo root (gitignored); one shared dir for all instances
   sage_attention: true
   quant: int8_convrot                 # Ampere: INT8 ConvRot (fp8 is not hardware-accelerated on RTX 30)
 

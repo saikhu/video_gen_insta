@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Start one ComfyUI instance per GPU inside tmux (alternative to systemd). Usage: bash scripts/comfy_tmux.sh [COMFY_ROOT]
 set -euo pipefail
-COMFY_ROOT="${1:-${COMFY_ROOT:-/opt/comfy}}"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+COMFY_ROOT="${1:-${COMFY_ROOT:-$REPO_DIR/runtime/comfy}}"
 N=$(nvidia-smi --list-gpus | wc -l)
 for i in $(seq 0 $((N - 1))); do
   tmux kill-session -t "comfy$i" 2>/dev/null || true

@@ -15,4 +15,4 @@ PY
     echo "http://127.0.0.1:$port: DOWN"
   fi
 done
-uv run vgi doctor --env "${VGI_ENV:-linux_2x3090}"
+uv run vgi doctor

@@ -12,7 +12,7 @@ comfy:
   endpoints: ["http://127.0.0.1:8188", "http://127.0.0.1:8189", "http://127.0.0.1:8190", "http://127.0.0.1:8191"]
   dual_instance: true                 # one ComfyUI instance per GPU (systemd comfy@0..3); 251 GB RAM holds four LTX sets
   gpu_lease: true
-  models_dir: /srv/usman/models       # the 1 TB /srv volume; root (/) is 96% full
+  models_dir: models                  # relative to the repo root (gitignored); override with MODELS_DIR
   sage_attention: true                # SageAttention 1.0.6 (Triton) works on Ada; v2 needs a source build
   quant: int8_convrot
 

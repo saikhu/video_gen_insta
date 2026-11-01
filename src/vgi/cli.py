@@ -40,7 +40,15 @@ def find_root() -> Path:
 
 
 def default_env() -> str:
-    return os.environ.get("VGI_ENV") or ("mac_m5max" if platform.system() == "Darwin" else "linux_2x3090")
+    if os.environ.get("VGI_ENV"):
+        return os.environ["VGI_ENV"]
+    if platform.system() == "Darwin":
+        return "mac_m5max"
+    try:
+        n = len(subprocess.run(["nvidia-smi", "--list-gpus"], capture_output=True, text=True, timeout=10).stdout.splitlines())
+    except Exception:  # noqa: BLE001
+        n = 0
+    return "linux_4x4090" if n >= 4 else "linux_2x3090"
 
 
 def jobs_root(root: Path) -> Path:
@@ -375,7 +383,9 @@ def models_pull(env: str = None, only: str = typer.Option(None, help="model name
     root = find_root()
     env = env or default_env()
     envc = load_yaml(root / "configs" / "env" / f"{env}.yaml")
-    models_dir = Path(os.environ.get("MODELS_DIR") or envc.get("comfy", {}).get("models_dir") or root / "models")
+    models_dir = Path(os.environ.get("MODELS_DIR") or envc.get("comfy", {}).get("models_dir") or "models")
+    if not models_dir.is_absolute():
+        models_dir = root / models_dir
     data = load_yaml(root / "comfy" / "models.yaml")
     try:
         from huggingface_hub import hf_hub_download

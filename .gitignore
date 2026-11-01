@@ -5,6 +5,7 @@ __pycache__/
 outputs/
 data/jokes_db.sqlite
 models/
+runtime/
 *.onnx
 *.bin
 .pytest_cache/
