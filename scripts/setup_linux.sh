@@ -85,6 +85,7 @@ ok "ComfyUI $(git rev-parse --short HEAD) with venv"
 say "Custom nodes and shared model paths"
 cd "$COMFY_ROOT/ComfyUI/custom_nodes"
 clone_node() { [ -d "$2" ] || git clone -q --depth 1 "$1" "$2"; [ -f "$2/requirements.txt" ] && uv pip install --python "$COMFY_ROOT/ComfyUI/.venv/bin/python" -r "$2/requirements.txt" -q || true; ok "$2"; }
+chmod +x "$REPO_DIR"/scripts/*.sh
 clone_node https://github.com/city96/ComfyUI-GGUF.git ComfyUI-GGUF
 clone_node https://github.com/kijai/ComfyUI-KJNodes.git ComfyUI-KJNodes
 clone_node https://github.com/Fannovel16/ComfyUI-Frame-Interpolation.git ComfyUI-Frame-Interpolation
@@ -115,13 +116,14 @@ fi
 
 # ---------------------------------------------------------------- 6. services
 if [ "$USE_SYSTEMD" = 1 ]; then
-  say "systemd services comfy@0 and comfy@1"
-  sed -e "s|/opt/comfy|$COMFY_ROOT|g" -e "s|User=comfy|User=$USER|" "$REPO_DIR/comfy/systemd/comfy@.service" | sudo tee /etc/systemd/system/comfy@.service >/dev/null
+  say "systemd services comfy@0..comfy@$((GPU_COUNT - 1)) (ports 8188+N)"
+  sed -e "s|__REPO__|$REPO_DIR|g" -e "s|__COMFY_ROOT__|$COMFY_ROOT|g" -e "s|__USER__|$USER|" "$REPO_DIR/comfy/systemd/comfy@.service" | sudo tee /etc/systemd/system/comfy@.service >/dev/null
   sudo systemctl daemon-reload
-  for i in $(seq 0 $((GPU_COUNT - 1))); do sudo systemctl enable --now "comfy@$i"; done
-  sleep 8
+  for i in $(seq 0 $((GPU_COUNT - 1))); do sudo systemctl enable "comfy@$i" >/dev/null 2>&1; sudo systemctl restart "comfy@$i"; done
+  sleep 12
   for i in $(seq 0 $((GPU_COUNT - 1))); do
-    curl -sf "http://127.0.0.1:818$i/system_stats" >/dev/null && ok "comfy@$i listening on 818$i" || warn "comfy@$i not up yet: journalctl -u comfy@$i -f"
+    port=$((8188 + i))
+    curl -sf "http://127.0.0.1:$port/system_stats" >/dev/null && ok "comfy@$i listening on $port" || warn "comfy@$i not up yet on $port: journalctl -u comfy@$i -f"
   done
 else
   warn "systemd skipped: start instances with  bash scripts/comfy_tmux.sh"

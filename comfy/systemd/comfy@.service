@@ -1,14 +1,13 @@
-# /etc/systemd/system/comfy@.service — one ComfyUI instance per GPU: systemctl enable --now comfy@0 comfy@1
+# Installed by scripts/setup_linux.sh as /etc/systemd/system/comfy@.service (paths and user substituted).
+# One ComfyUI instance per GPU: systemctl enable --now comfy@0 comfy@1 ...   (instance N listens on 8188+N)
 [Unit]
-Description=ComfyUI instance on GPU %i
+Description=ComfyUI instance %i (GPU %i, port 8188+%i)
 After=network.target
 
 [Service]
-User=comfy
-WorkingDirectory=/opt/comfy/ComfyUI
-Environment=PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-ExecStart=/opt/comfy/ComfyUI/.venv/bin/python main.py --listen 127.0.0.1 --port 818%i --cuda-device %i \
-          --use-sage-attention --disable-auto-launch --output-directory /opt/comfy/output/%i --temp-directory /opt/comfy/temp/%i
+User=__USER__
+WorkingDirectory=__REPO__
+ExecStart=/usr/bin/env bash __REPO__/scripts/comfy_instance.sh %i __COMFY_ROOT__
 Restart=on-failure
 RestartSec=5
 

@@ -290,13 +290,16 @@ def doctor(env: str = None) -> None:
     ram = cfg.env.hardware.get("ram_gb")
     if comfy.dual_instance:
         row("dual ComfyUI instances", (ram or 0) >= 64, f"ram_gb={ram} (needs >= 64)")
-    for mod, extra in (("kokoro", "tts"), ("mlx_audio", "mac"), ("mflux", "mac"), ("cv2", "qa"), ("whisperx", "captions")):
+    mac = platform.system() == "Darwin"
+    checks = [("kokoro", "tts"), ("cv2", "qa"), ("whisperx", "captions")] + ([("mlx_audio", "mac"), ("mflux", "mac")] if mac else [])
+    for mod, extra in checks:
         try:
             __import__(mod)
             row(mod, True)
         except ImportError:
             row(mod, None, f"uv sync --extra {extra}")
-    row("mflux-generate", shutil.which("mflux-generate") is not None, shutil.which("mflux-generate") or "uv sync --extra mac")
+    if mac:
+        row("mflux-generate", shutil.which("mflux-generate") is not None, shutil.which("mflux-generate") or "uv sync --extra mac")
     if platform.system() == "Darwin":
         try:
             mem = int(subprocess.check_output(["sysctl", "-n", "hw.memsize"]).decode()) // 2**30

@@ -6,8 +6,6 @@ COMFY_ROOT="${1:-${COMFY_ROOT:-$REPO_DIR/runtime/comfy}}"
 N=$(nvidia-smi --list-gpus | wc -l)
 for i in $(seq 0 $((N - 1))); do
   tmux kill-session -t "comfy$i" 2>/dev/null || true
-  tmux new-session -d -s "comfy$i" "cd $COMFY_ROOT/ComfyUI && PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
-    .venv/bin/python main.py --listen 127.0.0.1 --port 818$i --cuda-device $i --use-sage-attention --disable-auto-launch \
-    --output-directory $COMFY_ROOT/output/$i --temp-directory $COMFY_ROOT/temp/$i 2>&1 | tee -a $COMFY_ROOT/comfy$i.log"
-  echo "started tmux session comfy$i on port 818$i (attach: tmux attach -t comfy$i)"
+  tmux new-session -d -s "comfy$i" "bash $REPO_DIR/scripts/comfy_instance.sh $i $COMFY_ROOT 2>&1 | tee -a $COMFY_ROOT/comfy$i.log"
+  echo "started tmux session comfy$i on port $((8188 + i)) (attach: tmux attach -t comfy$i)"
 done
