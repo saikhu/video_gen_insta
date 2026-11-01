@@ -1,0 +1,5 @@
+# comfy node install <name>   (ComfyUI-Manager registry names)
+ComfyUI-GGUF
+ComfyUI-KJNodes
+ComfyUI-Frame-Interpolation
+# later (v1.5): ComfyUI-WanVideoWrapper (Ovi), ACE-Step nodes are native

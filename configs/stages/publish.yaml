@@ -1,0 +1,6 @@
+# Stage: publish (v2). Instagram API with Instagram Login. Disabled in v1.
+enabled: false
+is_ai_generated: true
+share_to_feed: true
+trial_reel: false
+r2_public_base_url: ""

@@ -1,0 +1,11 @@
+# Stage: script. Fact sheet / idea -> ScenePlan JSON (structured output).
+backend: claude                 # claude | stub
+model: claude-opus-5-5
+effort: high
+max_tokens: 16000
+scenes_min: 6
+scenes_max: 10
+scene_seconds_min: 4.0
+scene_seconds_max: 9.0
+max_clip_seconds: 10.0          # LTX-2.5 practical limit per clip; longer scenes are chained
+words_per_second: 2.5

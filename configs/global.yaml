@@ -1,0 +1,25 @@
+# Global defaults. Lowest precedence: global < stages/<stage> < topics/<topic> < env/<env> < CLI overrides.
+project_name: video_gen_insta
+outputs_dir: outputs/jobs
+data_dir: data
+seed_base: 20261102          # deterministic seeds derive from this + scene + candidate + stage; --reseed bumps it
+
+reel:                        # Instagram Reels spec (verified 2026-11-02 against the IG media reference)
+  width: 1080
+  height: 1920
+  fps: 25                    # LTX-2.5 native; Instagram accepts 23-60, no fps conversion
+  min_seconds: 45
+  max_seconds: 75
+  loudness_lufs: -14
+  true_peak_dbtp: -1
+  video_codec: libx264
+  video_bitrate_max_mbps: 25
+  audio_bitrate_kbps: 128
+  audio_sample_rate: 48000
+
+safe_zone:                   # pixels kept clear of captions/overlays (Instagram UI overlays)
+  top_px: 250
+  bottom_px: 420
+  side_px: 60
+
+ai_disclosure: "This video was created with AI-generated visuals and voice."

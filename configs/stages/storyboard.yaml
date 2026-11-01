@@ -1,0 +1,3 @@
+# Stage: storyboard. Writes preview.html for the human review gate.
+template: preview.html.j2
+open_browser: false

@@ -1,0 +1,9 @@
+# Stage: research. Islamic: cited fact sheet from the local corpus. Memes: original idea pool.
+backend: claude                 # claude | stub
+model: claude-opus-5-5
+effort: high
+max_tokens: 16000
+max_chunks: 24                  # corpus chunks sent as cited documents
+chunk_chars: 3000
+min_chunk_score: 1              # keyword hits required for a chunk to be included
+ideas_per_run: 20               # memes only

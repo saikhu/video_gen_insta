@@ -1,0 +1,16 @@
+# /etc/systemd/system/comfy@.service — one ComfyUI instance per GPU: systemctl enable --now comfy@0 comfy@1
+[Unit]
+Description=ComfyUI instance on GPU %i
+After=network.target
+
+[Service]
+User=comfy
+WorkingDirectory=/opt/comfy/ComfyUI
+Environment=PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+ExecStart=/opt/comfy/ComfyUI/.venv/bin/python main.py --listen 127.0.0.1 --port 818%i --cuda-device %i \
+          --use-sage-attention --disable-auto-launch --output-directory /opt/comfy/output/%i --temp-directory /opt/comfy/temp/%i
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

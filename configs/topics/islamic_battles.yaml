@@ -1,0 +1,56 @@
+# Topic: famous battles of early Islamic history. Research is grounded in the local corpus (data/corpus/islamic).
+name: islamic_battles
+plugin: islamic_battles
+language: en
+style: cinematic_desert
+voice: narrator_en
+corpus_dir: data/corpus/islamic
+music_policy: native_only             # no instruments; LTX-2.5 diegetic audio + silence only
+
+subjects:                             # consensus events first; contested ones later
+  - Battle of Badr
+  - Battle of Uhud
+  - Battle of the Trench
+  - Battle of Khaybar
+  - Battle of Mu'tah
+  - Battle of Hunayn
+  - Expedition of Tabuk
+  - Battle of Yarmouk
+  - Battle of al-Qadisiyyah
+
+honorifics:                           # spoken form is written into narration; caption form replaces it in captions
+  - trigger: "peace be upon him"
+    caption: "ﷺ"
+  - trigger: "may Allah be pleased with him"
+    caption: "(RA)"
+  - trigger: "may Allah be pleased with them"
+    caption: "(RA)"
+
+depiction:
+  rule: >
+    Never depict the face or body of the Prophet Muhammad (peace be upon him), any other prophet,
+    members of his household, or any named Companion. Armies and crowds must be distant, back-lit,
+    silhouetted, or shown from behind; no identifiable individual faces in close-up.
+  forbidden_figures: ["Prophet Muhammad", "any prophet", "Ahl al-Bayt", "Abu Bakr", "Umar", "Uthman", "Ali",
+                      "Hamza", "Khalid ibn al-Walid", "Sa'd ibn Abi Waqqas", "any named Companion"]
+  shot_whitelist: [wide, aerial, landscape, silhouette, crowd_distant, map, calligraphy, closeup_object, environment]
+  negative_prompt: >
+    close-up face, portrait, recognizable face, identifiable person, visible facial features, text,
+    watermark, logo, modern clothing, modern buildings, musical instruments, cross, deformed hands, blurry
+
+narration:
+  tone: "measured documentary voice; reverent, vivid but restrained; no sensationalism; no religious rulings"
+  words_per_second: 2.5
+  attribution_phrases: ["According to early sources,", "Classical historians report that", "Tradition holds that"]
+  always_hedge: ["troop numbers", "casualty figures", "exact dates"]
+  avoid: ["sectarian disputes", "Malik ibn Nuwayra", "takfir", "Qur'an recitation audio", "jokes about sacred figures"]
+
+caption_footer: "Sources: {sources}. Visuals are AI-generated reconstructions, not historical footage."
+hashtags: ["#IslamicHistory", "#Seerah", "#History", "#Battle", "#Islam", "#Muslim", "#Documentary", "#Reels"]
+
+stages:
+  music:
+    engine: none
+  qa:
+    face_check: true
+    face_threshold: 0.18

@@ -1,0 +1,5 @@
+prompt_prefix: "Stylized 3D cartoon render, soft studio lighting, vibrant colors, expressive original animal characters,"
+prompt_suffix: "clean composition, centered subject, humorous mood"
+negative_prompt: "text, watermark, logo, real person, celebrity, copyrighted character, horror"
+reference_images: []
+lora: null

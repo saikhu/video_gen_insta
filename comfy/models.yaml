@@ -1,0 +1,25 @@
+# Model files for the Linux render farm. `vgi models pull --env linux_2x3090` downloads them into comfy.models_dir.
+# Verified 2026-11-02 against the ComfyUI LTX-2.5 tutorial and Comfy-Org Hugging Face repos; re-check file names
+# before the first pull (repos get reorganized). All licenses commercial-OK at this project's scale.
+models:
+  # ---- LTX-2.5 (primary video; license: LTX-2 Community, free < $10M revenue, label AI content) ----
+  - {name: ltx25-transformer-int8, repo: Lightricks/LTX-2.5, file: ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors, dest: diffusion_models}
+  - {name: ltx25-text-encoder,     repo: Lightricks/LTX-2.5, file: gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors, dest: text_encoders}
+  - {name: ltx25-video-vae,        repo: Lightricks/LTX-2.5, file: ltx-2.5-video-vae.safetensors, dest: vae}
+  - {name: ltx25-audio-vae,        repo: Lightricks/LTX-2.5, file: ltx-2.5-audio-vae.safetensors, dest: vae}
+  - {name: ltx25-spatial-upscaler, repo: Lightricks/LTX-2.5, file: ltx-2.5-latent-spatial-upscaler-x2.safetensors, dest: latent_upscale_models}
+  # ---- FLUX 3 Image Klein (primary keyframes; Kommunity license, free < $5M) ----
+  - {name: flux3-klein,            repo: black-forest-labs/FLUX.3-image-klein, file: flux3-image-klein.safetensors, dest: diffusion_models}
+  # ---- Z-Image Turbo (alt keyframes, Apache) ----
+  - {name: z-image-turbo,          repo: Comfy-Org/z_image_turbo, file: split_files/diffusion_models/z_image_turbo_bf16.safetensors, dest: diffusion_models}
+  - {name: z-image-text-encoder,   repo: Comfy-Org/z_image_turbo, file: split_files/text_encoders/qwen_3_4b.safetensors, dest: text_encoders}
+  - {name: z-image-vae,            repo: Comfy-Org/z_image_turbo, file: split_files/vae/ae.safetensors, dest: vae}
+  # ---- Wan 2.2 I2V A14B (fallback video, Apache) ----
+  - {name: wan22-i2v-high-q8,      repo: QuantStack/Wan2.2-I2V-A14B-GGUF, file: HighNoise/Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf, dest: unet}
+  - {name: wan22-i2v-low-q8,       repo: QuantStack/Wan2.2-I2V-A14B-GGUF, file: LowNoise/Wan2.2-I2V-A14B-LowNoise-Q8_0.gguf, dest: unet}
+  - {name: wan-umt5,               repo: Comfy-Org/Wan_2.1_ComfyUI_repackaged, file: split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors, dest: text_encoders}
+  - {name: wan-vae,                repo: Comfy-Org/Wan_2.1_ComfyUI_repackaged, file: split_files/vae/wan_2.1_vae.safetensors, dest: vae}
+  # ---- SeedVR2 3B (fallback upscaler, native node) ----
+  - {name: seedvr2-3b-int8,        repo: Comfy-Org/SeedVR2, file: seedvr2_ema_3b_int8_convrot.safetensors, dest: upscale_models}
+  # ---- QA face detector (OpenCV YuNet, Apache) ----
+  - {name: yunet-face,             repo: opencv/opencv_zoo, file: models/face_detection_yunet/face_detection_yunet_2023mar.onnx, dest: ../models}

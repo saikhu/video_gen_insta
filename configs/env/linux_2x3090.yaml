@@ -1,0 +1,36 @@
+# Environment profile: Linux, 2x RTX 3090 (24 GB each), ~128 GB RAM. The render farm.
+name: linux_2x3090
+hardware:
+  gpus: ["RTX 3090", "RTX 3090"]
+  vram_gb: 24
+  ram_gb: 128
+power_watts: 850                      # 2 x 350 W GPUs + ~150 W system under diffusion load
+electricity_krw_per_kwh: 215
+
+comfy:
+  endpoints: ["http://127.0.0.1:8188", "http://127.0.0.1:8189"]   # one ComfyUI instance per GPU (systemd comfy@0, comfy@1)
+  dual_instance: true                 # requires >= 64 GB RAM (two LTX-2.5 int8 sets resident); doctor checks this
+  gpu_lease: true                     # POST /free on every endpoint before non-ComfyUI GPU stages
+  models_dir: /opt/comfy/models       # one shared models dir for both instances (extra_model_paths.yaml)
+  sage_attention: true
+  quant: int8_convrot                 # Ampere: INT8 ConvRot (fp8 is not hardware-accelerated on RTX 30)
+
+stages:
+  keyframes:
+    backend: comfy
+    workflow: image_flux3_klein
+    model: flux3_klein
+  video:
+    backend: comfy
+    model: ltx25
+    workflow_i2v: video_ltx25_i2v
+    workflow_flf2v: video_ltx25_flf2v
+  tts:
+    engine: kokoro                    # CPU; Fish Drama 3 (v1.5) needs gpu_lease
+    device: cpu
+  music:
+    engine: none
+  captions:
+    timing_provider: engine
+  qa:
+    face_check: true

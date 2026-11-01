@@ -1,0 +1,8 @@
+# Stage: qa. Hard checks block export; warnings are recorded in qa_report.md.
+spec_check: true
+loudness_tolerance_lu: 1.0
+face_check: false               # topics/islamic_battles.yaml turns this on
+face_threshold: 0.18            # face bbox height / frame height above this -> fail
+face_sample_fps: 2
+face_model: models/face_detection_yunet_2023mar.onnx
+pronunciation_check: false      # requires whisper; warn-only

@@ -1,0 +1,21 @@
+# term -> IPA (for engines with phoneme input) and a plain-English respelling (for engines without).
+# Kokoro accepts inline overrides as [Term](/ipa/) in the text (misaki G2P).
+Badr:        {ipa: "bædr",        respell: "BUD-r"}
+Uhud:        {ipa: "ʊˈhʊd",       respell: "oo-HOOD"}
+Khandaq:     {ipa: "ˈxandaq",     respell: "KHAN-duk"}
+Khaybar:     {ipa: "ˈxaɪbar",     respell: "KHAY-bar"}
+Mu'tah:      {ipa: "ˈmuːta",      respell: "MOO-tah"}
+Hunayn:      {ipa: "huˈnaɪn",     respell: "hoo-NINE"}
+Tabuk:       {ipa: "taˈbuːk",     respell: "ta-BOOK"}
+Yarmouk:     {ipa: "jarˈmuːk",    respell: "yar-MOOK"}
+Qadisiyyah:  {ipa: "qɑːdɪˈsiːja", respell: "kah-dih-SEE-yah"}
+Quraysh:     {ipa: "qʊˈraɪʃ",     respell: "koo-RAYSH"}
+Medina:      {ipa: "məˈdiːnə",    respell: "meh-DEE-nah"}
+Mecca:       {ipa: "ˈmɛkə",       respell: "MEK-ah"}
+Muhajirun:   {ipa: "muhɑːdʒɪˈruːn", respell: "moo-hah-jih-ROON"}
+Ansar:       {ipa: "ʔanˈsɑːr",    respell: "an-SAR"}
+Abu Sufyan:  {ipa: "ˈabuː sʊfˈjɑːn", respell: "AH-boo soof-YAHN"}
+Hamza:       {ipa: "ˈhamza",      respell: "HAM-zah"}
+Khalid:      {ipa: "ˈxɑːlɪd",     respell: "KHAH-lid"}
+Heraclius:   {ipa: "hɪˈrækliəs",  respell: "hih-RAK-lee-us"}
+Sassanid:    {ipa: "səˈsɑːnɪd",   respell: "suh-SAH-nid"}

@@ -1,0 +1,32 @@
+# Environment profile: MacBook Pro M5 Max, 48 GB unified memory, macOS 26.
+# The Mac authors (Part A), builds keyframe-only reels, and can drive the Linux ComfyUI through an SSH tunnel.
+name: mac_m5max
+hardware:
+  gpu: apple_m5_max
+  ram_gb: 48
+  vram_gb: 48
+power_watts: 90
+electricity_krw_per_kwh: 215          # KEPCO residential tier 2 (summer figures); tier 3 is 307
+
+comfy:
+  endpoints: []                       # e.g. ["http://127.0.0.1:8188"] after: ssh -L 8188:127.0.0.1:8188 <linux>
+  remote_ssh_host: ""                 # optional: host alias from ~/.ssh/config used by `vgi tunnel`
+  dual_instance: false
+  gpu_lease: false
+
+stages:
+  keyframes:
+    backend: mflux                    # mflux Z-Image Turbo (verified on Apple Silicon); FLUX 3 Klein unverified
+    model: z_image_turbo
+    quantize: 8
+  video:
+    backend: remote_comfy             # falls back to ken_burns when no endpoint is configured
+  tts:
+    engine: kokoro
+    device: cpu
+  music:
+    engine: none
+  captions:
+    timing_provider: engine
+  qa:
+    face_check: true

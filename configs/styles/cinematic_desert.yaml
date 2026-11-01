@@ -1,0 +1,8 @@
+# Visual style preset for the Islamic battles track.
+prompt_prefix: "Cinematic historical reconstruction, 7th century Arabia, 35mm film look, golden hour, volumetric dust, anamorphic bokeh,"
+prompt_suffix: "epic wide composition, highly detailed environment, muted earth tones, pre-industrial world with no modern objects, all people distant or back-lit with no visible faces, documentary realism"
+# Z-Image Turbo ignores negative prompts (no CFG): exclusions must be phrased positively above.
+negative_prompt: "cartoon, anime, modern, power lines, roads, vehicles, text, watermark, logo, close-up face, portrait"
+reference_images: []            # up to 10 style references for FLUX 3 Klein
+lora: null
+grade_lut: null

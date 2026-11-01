@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>{{ plan.title }} — storyboard</title>
+<style>
+body{font-family:-apple-system,Segoe UI,sans-serif;margin:24px;background:#111;color:#eee}
+h1{margin:0 0 4px}.meta{color:#aaa;margin-bottom:18px}
+.scene{display:grid;grid-template-columns:1fr 2fr;gap:16px;border:1px solid #333;border-radius:10px;padding:14px;margin-bottom:14px;background:#181818}
+.cands{display:flex;gap:8px;flex-wrap:wrap}.cands figure{margin:0;text-align:center}
+.cands img{width:150px;aspect-ratio:9/16;object-fit:cover;border:3px solid #333;border-radius:6px}
+.cands .chosen img{border-color:#f5c518}
+.lbl{font-size:12px;color:#aaa}code{background:#222;padding:2px 6px;border-radius:4px}
+.warn{color:#f5c518}.box{background:#1d1d1d;border:1px solid #333;border-radius:8px;padding:12px;white-space:pre-wrap;font-size:13px}
+</style></head><body>
+<h1>{{ plan.title }}</h1>
+<div class="meta">job <code>{{ job.job_id }}</code> · topic {{ job.topic }} · {{ plan.scenes|length }} scenes · ~{{ total_seconds }} s · state {{ job.state }}</div>
+<p><b>Hook:</b> {{ plan.hook }}</p>
+{% if stage_notes %}<p class="warn">Validator warnings: {{ stage_notes|join(" · ") }}</p>{% endif %}
+<p class="lbl">Pick a keyframe per scene with <code>vgi pick {{ job.job_id }} &lt;scene&gt; &lt;candidate&gt;</code>, edit <code>02_script/scene_plan.json</code> if needed, then <code>vgi approve {{ job.job_id }}</code>.</p>
+{% for s in plan.scenes %}
+<div class="scene">
+  <div>
+    <div class="lbl">scene {{ s.id }} · {{ s.shot_type }} · {{ s.target_seconds }} s</div>
+    <div class="cands">
+    {% for p in kf_index.get(s.id|string, []) %}
+      <figure class="{{ 'chosen' if loop.index0 == s.keyframe_choice else '' }}"><img src="../{{ p }}" alt="c{{ loop.index0 }}"><figcaption class="lbl">c{{ loop.index0 }}</figcaption></figure>
+    {% endfor %}
+    </div>
+  </div>
+  <div>
+    <p><b>Narration:</b> {{ s.narration_text }}</p>
+    <p class="lbl"><b>Visual:</b> {{ s.visual_prompt }}<br><b>Motion:</b> {{ s.motion_prompt }}{% if s.on_screen_text %}<br><b>On-screen:</b> {{ s.on_screen_text }}{% endif %}</p>
+  </div>
+</div>
+{% endfor %}
+<h2>Caption</h2><div class="box">{{ caption }}</div>
+{% if fact_md %}<h2>Fact sheet</h2><div class="box">{{ fact_md }}</div>{% endif %}
+</body></html>

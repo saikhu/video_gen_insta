@@ -1,0 +1,22 @@
+# Stage: video (Part B). Keyframe -> clip. Clip length is derived from narration duration.
+backend: stub                   # stub | comfy | remote_comfy | ken_burns  (stub == ken_burns from keyframe)
+model: ltx25                    # ltx25 | wan22
+mode: i2v                       # i2v | flf2v (chained sub-clips use flf2v automatically)
+base_width: 544
+base_height: 960
+upscale: 2                      # latent 2x -> 1088x1920 -> crop 1080x1920
+steps: 30
+fps: 25
+frame_grid: 8                   # LTX frame count must be 8k+1
+max_clip_seconds: 10.0
+native_audio: true              # keep LTX-2.5 generated audio as diegetic track
+n_candidates: 1
+xfade_seconds: 0.4
+tail_seconds: 0.5               # must be >= xfade_seconds so narration never straddles a transition
+timeout_seconds: 1800
+retries: 1
+fallback: ken_burns             # degraded path when a clip fails: pan/zoom over the keyframe
+ken_burns:
+  zoom_start: 1.0
+  zoom_end: 1.12
+  pre_scale: 1.6                # upscale the keyframe before zoompan to avoid jitter

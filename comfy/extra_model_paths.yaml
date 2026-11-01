@@ -1,0 +1,11 @@
+# Place at <ComfyUI>/extra_model_paths.yaml on the Linux box so both instances share one models dir.
+vgi:
+  base_path: /opt/comfy/models
+  checkpoints: checkpoints
+  diffusion_models: diffusion_models
+  unet: unet
+  text_encoders: text_encoders
+  vae: vae
+  loras: loras
+  upscale_models: upscale_models
+  latent_upscale_models: latent_upscale_models

@@ -1,0 +1,10 @@
+# Narrator voice per engine.
+kokoro:
+  voice: bm_george              # British male documentary tone; alternatives: am_michael, af_heart
+  lang_code: b
+elevenlabs:
+  voice_id: ""
+  model_id: eleven_v4
+fish_drama3:
+  reference_audio: ""
+  direction: "[calm] [measured] [documentary]"

@@ -1,0 +1,40 @@
+# Topic: original AI-written jokes rendered as short clips. Never reuses existing meme templates or characters.
+name: memes
+plugin: memes
+language: en
+style: meme_cartoon
+voice: narrator_en
+music_policy: ace_step
+
+formats:
+  - id: animal_skit            # two original animal characters, 3-5 lines of dialogue, one punchline
+    scenes_min: 3
+    scenes_max: 5
+  - id: narrated_absurd        # deadpan narrator over absurd escalating visuals
+    scenes_min: 4
+    scenes_max: 7
+
+originality:
+  jokes_db: data/jokes_db.sqlite
+  max_similarity: 0.6          # token-Jaccard against stored premises; above this the idea is rejected
+  banned_characters: ["Tralalero", "Tung Tung Tung Sahur", "Italian brainrot", "Grumpy Cat", "Nyan Cat",
+                      "Keyboard Cat", "Success Kid", "Distracted Boyfriend", "Pepe", "Doge", "Wojak",
+                      "SpongeBob", "Shrek", "Minions", "Pikachu", "any Disney, Pixar, Nintendo or Marvel character",
+                      "any real celebrity or politician"]
+  banned_topics: ["religion", "ethnicity", "disability", "sexual content", "politics", "real tragedies"]
+
+narration:
+  tone: "deadpan, dry, quick; punchline lands in the last scene"
+  words_per_second: 2.8
+
+depiction:
+  shot_whitelist: [wide, medium, closeup_object, environment, character]
+  negative_prompt: "text, watermark, logo, real person, celebrity, brand logo, deformed hands, blurry"
+
+caption_footer: "Original AI-made characters. Visuals and voice are AI-generated."
+hashtags: ["#memes", "#funny", "#comedy", "#aiart", "#animals", "#reels", "#humor"]
+
+stages:
+  music:
+    engine: ace_step
+    prompt: "light playful ukulele, upbeat, no vocals"

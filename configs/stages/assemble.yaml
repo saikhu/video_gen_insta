@@ -1,0 +1,8 @@
+# Stage: assemble. Segments -> xfade concat -> captions -> two-pass loudnorm -> final.mp4
+transition: fade
+crf: 18
+preset: slow
+pix_fmt: yuv420p
+loudnorm_two_pass: true
+lra: 11
+font_dirs: ["/System/Library/Fonts", "/System/Library/Fonts/Supplemental", "/usr/share/fonts"]

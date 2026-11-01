@@ -1,0 +1,5 @@
+# Stage: export. Final deliverables for manual upload.
+name_template: "{job_id}"
+cover_scene: 1                  # scene whose chosen keyframe becomes cover.jpg
+caption_max_chars: 2200
+max_hashtags: 30

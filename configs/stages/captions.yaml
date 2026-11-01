@@ -1,0 +1,15 @@
+# Stage: captions. words.json -> ASS karaoke subtitles (burned in by assemble).
+timing_provider: engine         # engine | whisperx
+words_per_group: 3
+style:
+  font: "Arial Black"
+  size: 68
+  primary_colour: "&H00FFFFFF"  # ASS BGR: white
+  secondary_colour: "&H0000D7FF" # karaoke highlight: gold (BGR of #FFD700)
+  outline_colour: "&H00000000"
+  back_colour: "&H80000000"
+  outline: 4
+  shadow: 2
+  bold: -1
+  alignment: 2                  # bottom-center; MarginV keeps it above the safe zone
+pop_in_ms: 80

@@ -1,0 +1,42 @@
+[project]
+name = "vgi"
+version = "0.1.0"
+description = "Local, quality-first AI video pipeline for Instagram Reels (Islamic history + memes)."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "typer>=0.15",
+    "pydantic>=2.8",
+    "pydantic-settings>=2.5",
+    "pyyaml>=6.0",
+    "anthropic>=1.0",
+    "websocket-client>=1.8",
+    "jinja2>=3.1",
+    "pillow>=10.4,<13",   # 13.0 needs numbers._IntegralLike (not in CPython 3.12)
+    "numpy>=1.26",
+    "httpx>=0.27",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+tts = ["kokoro>=0.9", "soundfile>=0.12", "misaki[en]>=0.9"]
+captions = ["whisperx>=3.3"]
+mac = ["mlx-audio>=0.2", "mflux>=0.9"]
+qa = ["opencv-python-headless>=4.10"]
+dev = ["pytest>=8.3", "ruff>=0.6"]
+
+[project.scripts]
+vgi = "vgi.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vgi"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
