@@ -45,19 +45,34 @@ Flags: `--no-systemd` (then `bash scripts/comfy_tmux.sh` starts both instances i
 Overrides (only if you want ComfyUI or the models outside the repo): `COMFY_ROOT=<dir> MODELS_DIR=<dir> bash scripts/setup_linux.sh`.
 
 **Layout:** everything the script installs stays inside the repo and is gitignored: `runtime/comfy/ComfyUI`
-(+ its venv), `models/<subfolder>`, `outputs/jobs`. So clone the repo on the disk with space (on the `training`
-box that is `/srv`, root is 96% full) and run the script with no overrides. The env profile is picked by GPU
-count (4 → `linux_4x4090`); `VGI_ENV` overrides it.
+(+ its venv), `models/<subfolder>`, `outputs/jobs`. So clone the repo on the disk with space and run the
+script with no overrides.
+
+**What "env" means.** An *env profile* is one YAML file under `configs/env/` that describes a machine: which
+backend each stage uses, the ComfyUI endpoints, RAM/VRAM and the electricity rate. The ones that ship:
+
+| profile (`configs/env/<name>.yaml`) | machine |
+|---|---|
+| `mac_m5max` | MacBook Pro M5 Max: keyframes via mflux, Kokoro, video through a tunnel or Ken Burns |
+| `linux_2x3090` | Linux with two RTX 3090: two ComfyUI endpoints (8188, 8189) |
+| `linux_4x4090` | Linux with four RTX 4090: four endpoints (8188-8191) |
+
+Every `vgi` command takes `--env <name>`; when you omit it, the name is taken from the `VGI_ENV` environment
+variable, else detected (macOS → `mac_m5max`; Linux → `linux_4x4090` if `nvidia-smi` lists four or more
+GPUs, otherwise `linux_2x3090`). The setup script prints the profile it chose on its first lines. A job
+remembers the env it was created with, and the env is the only part of the configuration that is **not**
+frozen into the job, so the same job folder can be rendered under another profile. To add a machine, copy
+one of these files, rename it, and edit the `comfy.endpoints` and `stages:` overrides.
 
 ## 2. Verify
 
 ```bash
-bash scripts/comfy_smoke.sh                    # health + VRAM of each endpoint, then `vgi doctor --env linux_2x3090`
+bash scripts/comfy_smoke.sh                    # health + VRAM of each endpoint, then `vgi doctor` (auto-detected env)
 journalctl -u comfy@0 -f                       # if an instance is not up
 ```
 
-`vgi doctor` must show both endpoints **ok** with free VRAM ≈ 23 GB, `libass (captions) ok`,
-`dual ComfyUI instances ok (ram_gb=128)`.
+`vgi doctor` must show every endpoint **ok** with free VRAM ≈ 23 GB, `libass (captions) ok` and
+`dual ComfyUI instances ok`.
 
 ## 3. Export the workflow templates (manual, once)
 
@@ -86,13 +101,14 @@ step the tutorial uses (24 GB). Commit the JSON files (`git add comfy/workflows/
 ## 4. First real clip and benchmark
 
 ```bash
-uv run vgi new --topic islamic_battles --subject "Battle of Badr" --env linux_2x3090
+uv run vgi new --topic islamic_battles --subject "Battle of Badr"      # --env <profile> only if auto-detection is wrong
 uv run vgi plan <job>            # Claude if ANTHROPIC_API_KEY is set, else stub; keyframes via FLUX 3 Klein on GPU
 uv run vgi approve <job>
 uv run vgi run <job> --from video --until video --scene 1     # one LTX-2.5 clip; watch `vgi logs <job> --stage video`
 ```
 
-Record the measured seconds per clip as a comment under `stages.video` in `configs/env/linux_2x3090.yaml`,
+Record the measured seconds per clip as a comment under `stages.video` in the env profile you used
+(`configs/env/linux_4x4090.yaml` on the 4090 box),
 then render the whole reel: `uv run vgi render <job> && uv run vgi qa <job> && uv run vgi export <job>`.
 
 ## 5. Driving the box from the Mac (optional)

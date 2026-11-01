@@ -92,7 +92,8 @@ bash scripts/setup_linux.sh     # --inspect | --skip-models | --no-systemd (then
 bash scripts/comfy_smoke.sh     # health + VRAM per endpoint, then `vgi doctor`
 ```
 
-The env profile is chosen by GPU count (`linux_4x4090` for four GPUs, `linux_2x3090` otherwise;
+An *env profile* is a file in `configs/env/` describing one machine; every `vgi` command accepts
+`--env <name>` and otherwise auto-detects it (`linux_4x4090` for four GPUs, `linux_2x3090` otherwise;
 `VGI_ENV` overrides). Instance N serves GPU N on port 8188+N as the systemd unit `comfy@N`
 (`journalctl -u comfy@0 -f`). The one manual step is exporting the ComfyUI workflows in API format
 with `{{placeholders}}` into `comfy/workflows/`; the table of templates and placeholders is in
@@ -109,7 +110,7 @@ env) at `vgi new`, so the same job folder renders on either machine.
 | file | controls |
 |---|---|
 | `global.yaml` | reel spec (1080×1920, 25 fps, 45-75 s, −14 LUFS / −1 dBTP), caption safe zones, seed base |
-| `env/mac_m5max.yaml`, `env/linux_2x3090.yaml` | backends per stage, ComfyUI endpoints, RAM/VRAM, electricity rate |
+| `env/mac_m5max.yaml`, `env/linux_2x3090.yaml`, `env/linux_4x4090.yaml` | one **env profile** per machine: backends per stage, ComfyUI endpoints, RAM/VRAM, electricity rate. Selected with `--env <name>`, else `VGI_ENV`, else auto-detected (macOS → `mac_m5max`; Linux → by GPU count) |
 | `topics/islamic_battles.yaml` | corpus dir, subjects, depiction rule + shot whitelist, honorifics, `music_policy: native_only`, hashtags |
 | `topics/memes.yaml` | formats, banned characters/topics, originality threshold, ACE-Step prompt |
 | `stages/research.yaml` … `stages/publish.yaml` | one file per stage: models, steps, resolutions, candidates, xfade/tail, caption style, QA thresholds |
