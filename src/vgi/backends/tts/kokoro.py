@@ -32,7 +32,8 @@ class KokoroTTSBackend:
         if self._pipe is None:
             from kokoro import KPipeline  # heavy import, lazy
 
-            self._pipe = KPipeline(lang_code=self.lang_code, device=self.device if self.device != "cpu" else None)
+            # "cpu" must stay on the CPU: KPipeline(device=None) means auto-select, which grabs the GPU on CUDA boxes
+            self._pipe = KPipeline(lang_code=self.lang_code, device=self.device or "cpu")
         return self._pipe
 
     NATIVE_SR = 24000
