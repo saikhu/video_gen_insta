@@ -1,0 +1,18 @@
+{
+  "source": "Comfy-Org/workflow_templates templates/video_ltx2_5_flf2v.json (exported to API format via the frontend)",
+  "notes": "Single-pass first/last-frame workflow at Width x Height (no latent upscaler). Used for chained sub-clips, run at the BASE size; the pipeline scales the result to reel size. Prompt-enhancer branch removed.",
+  "delete": ["251:247", "251:246", "251:248", "251:250", "251:252"],
+  "set": [
+    {"class_type": "LoadImage", "title_contains": "First Frame", "inputs": {"image": "{{image}}"}},
+    {"class_type": "LoadImage", "title_contains": "Last Frame", "inputs": {"image": "{{last_image}}"}},
+    {"class_type": "CLIPTextEncode", "nth": 1, "inputs": {"text": "{{prompt}}"}},
+    {"class_type": "CLIPTextEncode", "nth": 0, "inputs": {"text": "{{negative}}"}},
+    {"class_type": "PrimitiveInt", "title_contains": "Width", "inputs": {"value": "{{width}}"}},
+    {"class_type": "PrimitiveInt", "title_contains": "height", "inputs": {"value": "{{height}}"}},
+    {"class_type": "PrimitiveInt", "title_contains": "Frame Rate", "inputs": {"value": "{{fps}}"}},
+    {"class_type": "EmptyLTXVLatentVideo", "inputs": {"length": "{{frames}}"}},
+    {"class_type": "RandomNoise", "inputs": {"noise_seed": "{{seed}}"}},
+    {"class_type": "SaveVideo", "inputs": {"filename_prefix": "{{prefix}}"}}
+  ],
+  "require": ["{{image}}", "{{last_image}}", "{{prompt}}", "{{negative}}", "{{width}}", "{{height}}", "{{fps}}", "{{frames}}", "{{seed}}", "{{prefix}}"]
+}

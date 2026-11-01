@@ -1,17 +1,14 @@
 # Workflow templates (API format)
 
-Export each workflow from ComfyUI with **Workflow → Export (API)** and save it here with these names:
+Generated, not hand-exported: official templates from `Comfy-Org/workflow_templates` → the frontend's
+`graphToPrompt()` → `scripts/ui_to_api.py` with the spec in `comfy/specs/<name>.json` (placeholder injection,
+node deletion, required-placeholder check). Validated against ComfyUI 0.43 `/prompt`.
 
-| file | purpose | placeholders the pipeline fills |
-|---|---|---|
-| `image_flux3_klein.json` | keyframes (Linux) | `{{prompt}} {{negative}} {{width}} {{height}} {{seed}} {{steps}} {{guidance}} {{prefix}}` |
-| `image_qwen_2512.json` | keyframes alt | same |
-| `video_ltx25_i2v.json` | clip from one keyframe | `{{image}} {{prompt}} {{negative}} {{seed}} {{frames}} {{width}} {{height}} {{steps}} {{fps}} {{prefix}}` |
-| `video_ltx25_flf2v.json` | chained sub-clips | same + `{{last_image}}` |
-| `video_wan22_i2v.json` | fallback video | same as i2v |
-| `upscale_seedvr2.json` | optional upscale | `{{video}} {{prefix}}` |
+| file | placeholders |
+|---|---|
+| `image_z_image_turbo.json` | prompt, width, height, seed, steps, prefix |
+| `video_ltx25_i2v.json` | image, prompt, negative, final_width, final_height, fps, frames, seed, prefix |
+| `video_ltx25_flf2v.json` | image, last_image, prompt, negative, width, height, fps, frames, seed, prefix |
 
-Put a placeholder string (e.g. `"{{seed}}"`) in the node input you want controlled; numeric placeholders are
-converted to numbers when the whole value is the placeholder. `SaveVideo`/`SaveImage` must use `{{prefix}}` as
-`filename_prefix` so two instances never collide. Start from the ComfyUI templates `video_ltx2_5_i2v` and
-`video_ltx2_5_flf2v` (docs.comfy.org/tutorials/video/ltx/ltx-2-5).
+A numeric placeholder that is the whole value becomes a number when filled (`fill_workflow`). `prefix` is the
+`filename_prefix` of the save node; the pipeline sets it per job/scene/GPU so instances never collide.

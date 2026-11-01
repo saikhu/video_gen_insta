@@ -1,0 +1,11 @@
+{
+  "source": "Comfy-Org/workflow_templates templates/image_z_image_turbo.json (exported to API format via the frontend)",
+  "set": [
+    {"class_type": "UNETLoader", "inputs": {"unet_name": "z_image_turbo_int8_convrot.safetensors"}},
+    {"class_type": "CLIPTextEncode", "inputs": {"text": "{{prompt}}"}},
+    {"class_type": "EmptySD3LatentImage", "inputs": {"width": "{{width}}", "height": "{{height}}"}},
+    {"class_type": "KSampler", "inputs": {"seed": "{{seed}}", "steps": "{{steps}}"}},
+    {"class_type": "SaveImage", "inputs": {"filename_prefix": "{{prefix}}"}}
+  ],
+  "require": ["{{prompt}}", "{{width}}", "{{height}}", "{{seed}}", "{{steps}}", "{{prefix}}"]
+}

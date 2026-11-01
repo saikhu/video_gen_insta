@@ -27,11 +27,12 @@ class ComfyVideoBackend:
 
     def generate(self, keyframe: Path, out: Path, seconds: float, seed: int, *, prompt: str, negative: str,
                  frames: int, width: int, height: int, steps: int, fps: int, prefix: str,
-                 last_frame: Path | None = None, **_) -> Path:
+                 last_frame: Path | None = None, upscale: int = 1, **_) -> Path:
         client = self.pool.next()
         image_ref = client.upload_image(keyframe)
         values = {"image": image_ref, "prompt": prompt, "negative": negative, "seed": seed, "frames": frames,
-                  "width": width, "height": height, "steps": steps, "fps": fps, "prefix": prefix}
+                  "width": width, "height": height, "final_width": width * upscale, "final_height": height * upscale,
+                  "steps": steps, "fps": fps, "prefix": prefix}
         name = self.workflow_i2v
         if last_frame is not None:
             values["last_image"] = client.upload_image(last_frame)

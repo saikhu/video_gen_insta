@@ -1,0 +1,18 @@
+{
+  "source": "Comfy-Org/workflow_templates templates/video_ltx2_5_i2v.json (exported to API format via the frontend)",
+  "notes": "Two-pass distilled workflow: first pass at half of Width/Height, latent 2x upscale, second pass. Width/Height are the FINAL size. The prompt-enhancer branch (TextGenerateLTX2Prompt + gemma4_e2b CLIPLoader + switch) is removed so no extra model is needed; the prompt goes straight into the positive CLIPTextEncode.",
+  "delete": ["398:380", "398:393", "398:382", "398:383", "398:376"],
+  "set": [
+    {"class_type": "LoadImage", "title_contains": "First Frame", "inputs": {"image": "{{image}}"}},
+    {"class_type": "CLIPTextEncode", "nth": 0, "inputs": {"text": "{{prompt}}"}},
+    {"class_type": "CLIPTextEncode", "nth": 1, "inputs": {"text": "{{negative}}"}},
+    {"class_type": "PrimitiveInt", "title_contains": "Width", "inputs": {"value": "{{final_width}}"}},
+    {"class_type": "PrimitiveInt", "title_contains": "Height", "inputs": {"value": "{{final_height}}"}},
+    {"class_type": "PrimitiveInt", "title_contains": "Frame Rate", "inputs": {"value": "{{fps}}"}},
+    {"class_type": "EmptyLTXVLatentVideo", "inputs": {"length": "{{frames}}"}},
+    {"class_type": "RandomNoise", "nth": 0, "inputs": {"noise_seed": "{{seed}}"}},
+    {"class_type": "RandomNoise", "nth": 1, "inputs": {"noise_seed": "{{seed}}"}},
+    {"class_type": "SaveVideo", "inputs": {"filename_prefix": "{{prefix}}"}}
+  ],
+  "require": ["{{image}}", "{{prompt}}", "{{negative}}", "{{final_width}}", "{{final_height}}", "{{fps}}", "{{frames}}", "{{seed}}", "{{prefix}}"]
+}

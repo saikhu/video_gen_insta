@@ -71,32 +71,25 @@ bash scripts/comfy_smoke.sh                    # health + VRAM of each endpoint,
 journalctl -u comfy@0 -f                       # if an instance is not up
 ```
 
-`vgi doctor` must show every endpoint **ok** with free VRAM ≈ 23 GB, `libass (captions) ok` and
-`dual ComfyUI instances ok`.
+`vgi doctor` must show every endpoint **ok** with free VRAM ≈ 23 GB, `libass (captions) ok`,
+`dual ComfyUI instances ok` and `workflow templates ok`.
 
-## 3. Export the workflow templates (manual, once)
+## 3. Workflow templates (already in the repo)
 
-The pipeline drives ComfyUI with API-format JSON that contains `{{placeholders}}`. ComfyUI's UI is
-bound to localhost only, so open a tunnel from your Mac:
+`comfy/workflows/*.json` are API-format workflows generated from the official ComfyUI templates
+(`Comfy-Org/workflow_templates`) with `{{placeholders}}` injected, so no manual export is needed:
 
-```bash
-ssh -N -L 8188:127.0.0.1:8188 <linux-host>      # then browse http://127.0.0.1:8188
-```
-
-For each template below: **Workflow → Browse Templates**, load it, set the controlled inputs to the
-placeholder strings, then **Workflow → Export (API)** and save into `comfy/workflows/` in the repo.
-
-| save as | start from ComfyUI template | placeholders to put in node inputs |
+| file | from template | what the pipeline fills |
 |---|---|---|
-| `video_ltx25_i2v.json` | `video_ltx2_5_i2v` | LoadImage.image = `{{image}}`; positive prompt = `{{prompt}}`; negative = `{{negative}}`; KSampler/seed = `{{seed}}`; length/frames = `{{frames}}`; width/height = `{{width}}` `{{height}}`; steps = `{{steps}}`; fps = `{{fps}}`; SaveVideo.filename_prefix = `{{prefix}}` |
-| `video_ltx25_flf2v.json` | `video_ltx2_5_flf2v` | same + second LoadImage.image = `{{last_image}}` |
-| `image_z_image_turbo.json` | Z-Image Turbo template (Browse Templates → Image) with the int8 diffusion model, `qwen_3_4b` text encoder, `ae` VAE | prompt `{{prompt}}`, width/height `{{width}}` `{{height}}`, seed `{{seed}}`, steps `{{steps}}`, SaveImage.filename_prefix = `{{prefix}}` (Turbo has no negative/guidance; the pipeline ignores them) |
-| `image_flux3_klein.json` (optional) | FLUX 3 Klein template (needs ComfyUI ≥ 0.41) | same plus negative `{{negative}}` and guidance `{{guidance}}` |
-| `video_wan22_i2v.json` (fallback) | `video_wan2_2_14B_i2v`, replacing both "Load Diffusion Model" nodes with "Unet Loader (GGUF)" (category `bootleg`) pointing at the Q8_0 files in `models/unet` | same as i2v |
+| `image_z_image_turbo.json` | `image_z_image_turbo` | `{{prompt}} {{width}} {{height}} {{seed}} {{steps}} {{prefix}}` (Turbo ignores negative/guidance) |
+| `video_ltx25_i2v.json` | `video_ltx2_5_i2v` (two-pass, latent 2× upscale) | `{{image}} {{prompt}} {{negative}} {{final_width}} {{final_height}} {{fps}} {{frames}} {{seed}} {{prefix}}` |
+| `video_ltx25_flf2v.json` | `video_ltx2_5_flf2v` (single pass, chained sub-clips) | `{{image}} {{last_image}} {{prompt}} {{negative}} {{width}} {{height}} {{fps}} {{frames}} {{seed}} {{prefix}}` |
 
-Rules: a numeric input whose whole value is the placeholder becomes a number automatically; leave the
-model-loader nodes pointing at the files from `comfy/models.yaml`; keep the LTX text-encoder unload
-step the tutorial uses (24 GB). Commit the JSON files (`git add comfy/workflows/*.json`).
+The prompt-enhancer branch of the LTX templates (needs an extra Gemma model) is removed. To regenerate after
+a ComfyUI update: open any ComfyUI (even `--cpu`), load the template, run `app.graphToPrompt()` in the browser
+console (or Workflow → Export (API)), then
+`python scripts/ui_to_api.py --object-info <GET /object_info> --spec comfy/specs/<name>.json <export>.json comfy/workflows/<name>.json`.
+The spec files in `comfy/specs/` say which node inputs get which placeholder and which nodes are deleted.
 
 ## 4. First real clip and benchmark
 

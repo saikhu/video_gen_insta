@@ -84,7 +84,8 @@ class VideoStage(Stage):
         """Scenes longer than max_clip_seconds are chained: I2V, then FLF2V from the previous last frame."""
         vc = ctx.stage_cfg("video")
         max_s = vc.max_clip_seconds
-        common = dict(prompt=prompt, negative=neg, width=vc.base_width, height=vc.base_height, steps=vc.steps, fps=vc.fps)
+        common = dict(prompt=prompt, negative=neg, width=vc.base_width, height=vc.base_height, steps=vc.steps, fps=vc.fps,
+                      upscale=vc.upscale)
         if secs <= max_s:
             backend.generate(keyframe, out, secs, seed, frames=frames, prefix=f"{ctx.job.id}/clip/{scene_id}", **common)
             return
