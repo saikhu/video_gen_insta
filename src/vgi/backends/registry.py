@@ -42,7 +42,7 @@ def video_backend(ctx: RunContext):
         from .video.comfy_video import ComfyVideoBackend
 
         return ComfyVideoBackend(endpoints, ctx.root / "comfy" / "workflows", vc.workflow_i2v, vc.workflow_flf2v,
-                                 vc.timeout_seconds, log=ctx.log.for_stage("video")), fallback
+                                 vc.timeout_seconds, log=ctx.log.for_stage("video"), retries=vc.retries), fallback
     raise ValueError(f"unknown video backend {vc.backend!r}")
 
 

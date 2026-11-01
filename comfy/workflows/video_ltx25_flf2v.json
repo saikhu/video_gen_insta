@@ -188,10 +188,7 @@
   },
   "251:197": {
     "inputs": {
-      "frames_number": [
-        "251:226",
-        1
-      ],
+      "frames_number": "{{frames}}",
       "frame_rate": [
         "251:205",
         0

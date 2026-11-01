@@ -48,7 +48,7 @@ command -v ffmpeg >/dev/null && { ffmpeg -hide_banner -filters 2>/dev/null | gre
 say "System packages"
 if command -v apt-get >/dev/null; then
   sudo apt-get update -qq
-  sudo apt-get install -y -qq git ffmpeg espeak-ng build-essential python3-dev tmux curl >/dev/null
+  sudo apt-get install -y -qq git ffmpeg espeak-ng build-essential python3-dev tmux curl fonts-liberation >/dev/null
   ok "apt packages present"
 else
   warn "no apt-get: install git ffmpeg espeak-ng build-essential tmux yourself"
@@ -77,7 +77,7 @@ fi
   || uv pip install --python .venv/bin/python torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
 uv pip install --python .venv/bin/python -r requirements.txt
 # SageAttention 1.x: pure-Triton kernels, works on Ampere (SageAttention 2/3 need Ada/Blackwell builds).
-uv pip install --python .venv/bin/python "sageattention==1.0.6" triton || warn "sageattention install failed; drop --use-sage-attention from the service unit"
+uv pip install --python .venv/bin/python "sageattention==1.0.6" triton || warn "sageattention install failed; start instances with COMFY_EXTRA_ARGS='' (see docs/SETUP_LINUX.md troubleshooting)"
 .venv/bin/python -c "import torch; print('   torch', torch.__version__, 'cuda', torch.version.cuda, 'gpus', torch.cuda.device_count())"
 ok "ComfyUI $(git rev-parse --short HEAD) with venv"
 

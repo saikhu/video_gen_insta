@@ -33,7 +33,7 @@ class AssembleStage(Stage):
             seg = work / f"seg_{c['scene_id']:02d}.mp4"
             make_segment(ctx.job.path / c["path"], ctx.job.path / tts[c["scene_id"]].wav, seg, c["seconds"], vc.xfade_seconds,
                          reel.width, reel.height, reel.fps, reel.audio_sample_rate, bed=bed, bed_gain_db=mc.bed_gain_db,
-                         duck_db=mc.duck_db)
+                         duck_db=mc.duck_db, use_clip_audio=vc.native_audio)
             segs.append(seg)
             durs.append(float(c["seconds"]))
         raw = work / "assembled_raw.mp4"

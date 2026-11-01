@@ -67,13 +67,15 @@ class ComfyClient:
                 while time.time() < deadline:
                     try:
                         raw = ws.recv()
-                    except Exception:  # noqa: BLE001  (timeout → poll history)
+                    except websocket.WebSocketTimeoutException:   # quiet socket → poll history once
                         h = self.history(prompt_id)
                         if h and h.get("status", {}).get("completed"):
                             return h
                         if h and h.get("status", {}).get("status_str") == "error":
                             raise ComfyError(self._error_text(h))
                         continue
+                    except Exception:  # noqa: BLE001  socket closed/broken → fall back to polling (which sleeps)
+                        break
                     if isinstance(raw, bytes):
                         continue
                     msg = json.loads(raw)

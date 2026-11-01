@@ -148,7 +148,8 @@ def ken_burns(image: Path, out: Path, seconds: float, fps: int, width: int, heig
 
 def make_segment(video_in: Path, narration: Path | None, out: Path, seconds: float, lead_s: float,
                  width: int, height: int, fps: int, sample_rate: int, diegetic_gain_db: float = -10.0,
-                 bed: Path | None = None, bed_gain_db: float = -18.0, duck_db: float = -12.0) -> None:
+                 bed: Path | None = None, bed_gain_db: float = -18.0, duck_db: float = -12.0,
+                 use_clip_audio: bool = True) -> None:
     """Normalize one scene to reel geometry, pad/trim to `seconds`, mix narration (offset by lead) + diegetic."""
     inputs = ["-i", str(video_in)]
     graph = [f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},"
@@ -162,7 +163,7 @@ def make_segment(video_in: Path, narration: Path | None, out: Path, seconds: flo
         graph.append(f"[{idx}:a]aresample={sample_rate},aformat=channel_layouts=stereo,adelay={ms}|{ms},apad[n]")
         audio_labels.append("[n]")
         idx += 1
-    if has_audio(video_in):
+    if use_clip_audio and has_audio(video_in):
         graph.append(f"[0:a]aresample={sample_rate},aformat=channel_layouts=stereo,volume={diegetic_gain_db}dB,apad[d]")
         audio_labels.append("[d]")
     if bed is not None:
@@ -181,7 +182,8 @@ def make_segment(video_in: Path, narration: Path | None, out: Path, seconds: flo
     elif len(audio_labels) == 1:
         graph.append(f"{audio_labels[0]}anull[a]")
     else:
-        graph.append(f"{''.join(audio_labels)}amix=inputs={len(audio_labels)}:normalize=0:dropout_transition=0[a]")
+        graph.append(f"{''.join(audio_labels)}amix=inputs={len(audio_labels)}:normalize=0:dropout_transition=0,"
+                     f"alimiter=limit=0.95:level=false[a]")
     cmd = ["ffmpeg", "-y", "-v", "error", *inputs, "-filter_complex", ";".join(graph), "-map", "[v]", "-map", "[a]",
            "-t", f"{seconds:.3f}", "-r", str(fps), "-c:v", "libx264", "-preset", "fast", "-crf", "16",
            "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", "-ar", str(sample_rate), "-ac", "2", str(out)]

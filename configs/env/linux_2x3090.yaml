@@ -32,5 +32,7 @@ stages:
     engine: none
   captions:
     timing_provider: engine
+    style:
+      font: "Liberation Sans"           # apt fonts-liberation (installed by scripts/setup_linux.sh); Arial Black is macOS-only
   qa:
     face_check: true

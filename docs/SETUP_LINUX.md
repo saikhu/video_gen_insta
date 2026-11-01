@@ -95,7 +95,7 @@ The spec files in `comfy/specs/` say which node inputs get which placeholder and
 
 ```bash
 uv run vgi new --topic islamic_battles --subject "Battle of Badr"      # --env <profile> only if auto-detection is wrong
-uv run vgi plan <job>            # Claude if ANTHROPIC_API_KEY is set, else stub; keyframes via FLUX 3 Klein on GPU
+uv run vgi plan <job>            # Claude if ANTHROPIC_API_KEY is set, else stub; keyframes via Z-Image Turbo on GPU
 uv run vgi approve <job>
 uv run vgi run <job> --from tts --until video --scene 1       # narration (fast, CPU) + ONE LTX-2.5 clip; watch `vgi logs <job> --stage video`
 ```
@@ -116,7 +116,7 @@ each machine renders the jobs in its own `outputs/`.
 
 ## 6. Day-2 operations
 
-- Update ComfyUI: `cd runtime/comfy/ComfyUI && git pull && uv pip install --python .venv/bin/python -r requirements.txt && sudo systemctl restart comfy@0 comfy@1`.
+- Update ComfyUI: `cd runtime/comfy/ComfyUI && git pull && uv pip install --python .venv/bin/python -r requirements.txt && sudo systemctl restart 'comfy@*'`.
 - Free VRAM between jobs: `curl -X POST http://127.0.0.1:8188/free -d '{"unload_models":true,"free_memory":true}'`.
 - Output/temp folders: `runtime/comfy/output/<gpu>` and `runtime/comfy/temp/<gpu>`; the pipeline copies results
   into the job folder, so these can be cleaned (`find runtime/comfy/output -mtime +7 -delete`).
@@ -127,10 +127,11 @@ each machine renders the jobs in its own `outputs/`.
 | symptom | fix |
 |---|---|
 | `torch.cuda.is_available() == False` | driver too old or CPU wheel installed → `nvidia-smi`, then rerun step 2 (the script pins the cu128 index) |
-| `sageattention` import error at launch | remove `--use-sage-attention` from the unit/tmux command; speed drops ~25% |
+| `sageattention` import error at launch | the flag lives in `scripts/comfy_instance.sh` (`COMFY_EXTRA_ARGS`, default `--use-sage-attention`): `sudo systemctl edit comfy@.service` → `[Service]` / `Environment=COMFY_EXTRA_ARGS=` then `sudo systemctl restart 'comfy@*'`; for tmux: `COMFY_EXTRA_ARGS='' bash scripts/comfy_tmux.sh`. Speed drops ~25% |
 | OOM on the LTX second stage (1088×1920) | set `stages.video.upscale: 1` and use the SeedVR2 fallback, or lower `base_width/height` |
 | download 401/403 (LTX-2.5, FLUX) | request/accept access on the Hugging Face repo page, wait for approval, set `HF_TOKEN` in `.env`, re-run `uv run vgi models pull --only ltx25` |
 | black frames from SeedVR2 | disable FlashAttention in the SeedVR2 workflow (known on RTX 30 with INT8 checkpoints) |
 | `--use-sage-attention` silently ignored | Triton needs `python3-dev`; check `journalctl -u comfy@0` for a sageattention import error |
+| `--reseed` says it needs `--scene` | re-rolls are per scene: `vgi render <job> --scene 3 --reseed 1` (counters persist in `06_clips/seeds.json`) |
 | file name mismatch in `comfy/models.yaml` | open the repo page on Hugging Face, fix the `file:` path, re-run `uv run vgi models pull --only <name>` |
 | two instances OOM in system RAM | `comfy.dual_instance: false` and only enable `comfy@0` |

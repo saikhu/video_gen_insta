@@ -11,6 +11,7 @@
     {"class_type": "PrimitiveInt", "title_contains": "height", "inputs": {"value": "{{height}}"}},
     {"class_type": "PrimitiveInt", "title_contains": "Frame Rate", "inputs": {"value": "{{fps}}"}},
     {"class_type": "EmptyLTXVLatentVideo", "inputs": {"length": "{{frames}}"}},
+    {"class_type": "LTXVEmptyLatentAudio", "inputs": {"frames_number": "{{frames}}"}},
     {"class_type": "RandomNoise", "inputs": {"noise_seed": "{{seed}}"}},
     {"class_type": "SaveVideo", "inputs": {"filename_prefix": "{{prefix}}"}}
   ],

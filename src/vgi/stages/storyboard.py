@@ -22,7 +22,8 @@ class StoryboardStage(Stage):
     def run(self, ctx: RunContext) -> StageResult:
         plan = load_plan(ctx)
         research = json.loads((ctx.job.dir("research") / "research.json").read_text(encoding="utf-8"))
-        kf_index = json.loads((ctx.job.dir("keyframes") / "keyframes.json").read_text(encoding="utf-8"))
+        kf_raw = json.loads((ctx.job.dir("keyframes") / "keyframes.json").read_text(encoding="utf-8"))
+        kf_index = {k: (v["paths"] if isinstance(v, dict) else v) for k, v in kf_raw.items()}
         fact_md = ctx.job.dir("research") / "fact_sheet.md"
         env = Environment(loader=FileSystemLoader(str(Path(__file__).parent / "templates")),
                           autoescape=select_autoescape(["html"]))

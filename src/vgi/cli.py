@@ -17,7 +17,7 @@ from . import __version__
 from .config import ConfigLoader, config_from_content, load_secrets, load_yaml
 from .core.job import Job
 from .core.logging import console
-from .core.runner import PLAN_STAGES, RENDER_STAGES, run_stages, slice_stages
+from .core.runner import PLAN_STAGES, POST_STAGES, RENDER_STAGES, run_stages, slice_stages
 from .core.stage import RunContext
 
 app = typer.Typer(no_args_is_help=True, add_completion=False, help="Local AI video pipeline for Instagram Reels.")
@@ -44,10 +44,16 @@ def default_env() -> str:
         return os.environ["VGI_ENV"]
     if platform.system() == "Darwin":
         return "mac_m5max"
+    n = 0
     try:
-        n = len(subprocess.run(["nvidia-smi", "--list-gpus"], capture_output=True, text=True, timeout=10).stdout.splitlines())
+        out = subprocess.run(["nvidia-smi", "--list-gpus"], capture_output=True, text=True, timeout=10).stdout
+        n = sum(1 for line in out.splitlines() if line.startswith("GPU "))
     except Exception:  # noqa: BLE001
-        n = 0
+        pass
+    if n == 0:  # nvidia-smi slow/absent: count device nodes instead
+        import glob
+
+        n = len([d for d in glob.glob("/dev/nvidia[0-9]*")])
     return "linux_4x4090" if n >= 4 else "linux_2x3090"
 
 
@@ -96,6 +102,7 @@ def new(topic: str = typer.Option(..., help="configs/topics/<topic>.yaml"),
     """Create a job folder with a frozen content config."""
     root = find_root()
     env = env or default_env()
+    console.print(f"[dim]env profile: {env}[/dim]")
     cfg = ConfigLoader(root).load(env, topic, set_ or [])
     job = Job.create(jobs_root(root), topic, subject, cfg.content())
     job.manifest.env_used = env
@@ -156,11 +163,14 @@ def approve(job: str) -> None:
 
 @app.command()
 def render(job: str = typer.Argument(None), env: str = None, dry_run: bool = False, force: bool = False,
-           scene: list[int] = typer.Option(None), reseed: int = typer.Option(0, help="bump seed_base for --scene"),
+           scene: list[int] = typer.Option(None), reseed: int = typer.Option(0, help="re-roll the seeds of the --scene scenes (persisted per scene)"),
            all_approved: bool = typer.Option(False, "--all-approved", help="render every approved job")) -> None:
     """Part B: tts → video → music → captions → assemble. Requires an approved plan."""
     root = find_root()
+    if job is None and not all_approved:
+        raise typer.BadParameter("give a job id or --all-approved")
     targets = [Job(p.parent) for p in jobs_root(root).glob("*/manifest.json")] if all_approved else [_job(root, job)]
+    failed: list[str] = []
     for j in targets:
         if all_approved and j.manifest.state != "approved":
             continue
@@ -170,8 +180,18 @@ def render(job: str = typer.Argument(None), env: str = None, dry_run: bool = Fal
         if not j.is_approved() and not dry_run:
             raise typer.BadParameter(f"{j.id} is not approved (state={j.manifest.state}); run `vgi approve`")
         ctx = make_ctx(root, j, env, dry_run, force or bool(scene), scene, reseed)
-        run_stages(ctx, RENDER_STAGES)
+        try:
+            run_stages(ctx, RENDER_STAGES)
+        except Exception as e:  # noqa: BLE001
+            if not all_approved:
+                raise
+            failed.append(j.id)
+            console.print(f"[red]{j.id} failed:[/red] {e}")
+            continue
         console.print(f"[green]rendered[/green] {j.dir('assemble') / 'final.mp4'}")
+    if failed:
+        console.print(f"[red]{len(failed)} job(s) failed:[/red] {', '.join(failed)}")
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -204,7 +224,7 @@ def export(job: str, env: str = None) -> None:
 def run(job: str, env: str = None, from_: str = typer.Option(None, "--from"), until: str = typer.Option(None, "--until"),
         dry_run: bool = False, auto_approve: bool = False, force: bool = False,
         scene: list[int] = typer.Option(None, help="only these scene ids (keyframes/video stages)"),
-        reseed: int = typer.Option(0, help="bump seed_base (use with --scene to re-roll one scene)")) -> None:
+        reseed: int = typer.Option(0, help="re-roll the seeds of the --scene scenes (persisted per scene)")) -> None:
     """Run a slice of the full DAG. --dry-run implies --auto-approve and stub backends."""
     root = find_root()
     j = _job(root, job)
@@ -213,15 +233,16 @@ def run(job: str, env: str = None, from_: str = typer.Option(None, "--from"), un
         names = ["tts", *names]          # clip lengths come from narration; run tts first automatically
         console.print("[dim]tts has not run yet; running it first[/dim]")
     ctx = make_ctx(root, j, env, dry_run, force or bool(scene), scene, reseed)
-    for n in names:
-        if n == "tts" and not j.is_approved():
+    if set(names) & set(RENDER_STAGES + POST_STAGES):
+        if j.invalidate_if_plan_changed():
+            raise typer.BadParameter("plan changed after approval; re-approve")
+        if not j.is_approved():
             if dry_run or auto_approve:
                 j.approve()
                 console.print("[yellow]auto-approved[/yellow]")
             else:
                 raise typer.BadParameter("plan not approved; run `vgi approve` or pass --auto-approve")
-        if j.invalidate_if_plan_changed():
-            raise typer.BadParameter("plan changed after approval; re-approve")
+    for n in names:
         run_stages(ctx, [n])
     console.print(f"[green]done[/green] state={j.manifest.state}")
 

@@ -36,7 +36,7 @@ class RunContext:
 
     @property
     def seed_base(self) -> int:
-        return int(self.cfg.global_.seed_base) + int(self.reseed)
+        return int(self.cfg.global_.seed_base)
 
 
 @dataclass
@@ -47,6 +47,30 @@ class StageResult:
     seeds: list[int] = field(default_factory=list)
     prompt_ids: list[str] = field(default_factory=list)
     backend: str = ""
+    partial: bool = False          # True when a --scene run left other scenes untouched (stage must rerun later)
+
+
+def load_reseeds(path: Path) -> dict[int, int]:
+    """Per-scene reseed counters ({scene_id: n}); `--scene N --reseed k` adds k to scene N only."""
+    import json
+
+    if not path.exists():
+        return {}
+    return {int(k): int(v) for k, v in json.loads(path.read_text(encoding="utf-8")).items()}
+
+
+def apply_reseed(path: Path, scene_ids: list[int] | None, bump: int) -> dict[int, int]:
+    import json
+
+    counters = load_reseeds(path)
+    if bump:
+        if not scene_ids:
+            raise ValueError("--reseed needs --scene (or pass all scene ids explicitly)")
+        for sid in scene_ids:
+            counters[sid] = counters.get(sid, 0) + bump
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(counters, indent=2), encoding="utf-8")
+    return counters
 
 
 class Stage(ABC):
@@ -58,7 +82,8 @@ class Stage(ABC):
         data: dict[str, Any] = {"cfg": ctx.cfg.stages.get(self.name, {}), "seed_base": ctx.seed_base,
                                 "dry_run": ctx.dry_run}
         for r in self.requires:
-            data[f"dep:{r}"] = ctx.job.record(r).inputs_hash
+            rec = ctx.job.record(r)
+            data[f"dep:{r}"] = [rec.inputs_hash, rec.status, hash_obj(rec.artifacts)]
         return data
 
     def inputs_hash(self, ctx: RunContext) -> str:
@@ -79,6 +104,10 @@ class Stage(ABC):
         if not ctx.force and rec.status == "done" and rec.inputs_hash == h and self.artifacts_exist(ctx):
             log.info("cached, skipping", inputs_hash=h)
             return None
+        partial_deps = [r for r in self.requires if job.record(r).status == "partial"]
+        if partial_deps and not ctx.scene_filter and self.name not in ("keyframes", "video"):
+            raise RuntimeError(f"{self.name}: upstream stage(s) {partial_deps} are partial (a --scene run); "
+                               f"run the full stage first (e.g. `vgi render <job>`)")
         rec.status, rec.started, rec.inputs_hash, rec.finished = "running", time.time(), h, None
         job.save()
         log.info("start", inputs_hash=h)
@@ -91,7 +120,7 @@ class Stage(ABC):
             job.save()
             log.error("failed", error=str(e))
             raise
-        rec.status = "done"
+        rec.status = "partial" if result.partial else "done"
         rec.artifacts = result.artifacts
         rec.cost_usd = result.cost_usd
         rec.seeds = result.seeds

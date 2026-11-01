@@ -12,12 +12,13 @@ class ComfyVideoBackend:
     name = "comfy"
 
     def __init__(self, endpoints: list[str], workflows_dir: Path, workflow_i2v: str, workflow_flf2v: str,
-                 timeout_s: int, log=None):
+                 timeout_s: int, log=None, retries: int = 1):
         self.pool = EndpointPool(endpoints)
         self.workflows_dir = Path(workflows_dir)
         self.workflow_i2v, self.workflow_flf2v = workflow_i2v, workflow_flf2v
         self.timeout_s = timeout_s
         self.log = log
+        self.retries = max(0, retries)
 
     def _template(self, name: str) -> dict[str, Any]:
         p = self.workflows_dir / f"{name}.json"
@@ -28,6 +29,25 @@ class ComfyVideoBackend:
     def generate(self, keyframe: Path, out: Path, seconds: float, seed: int, *, prompt: str, negative: str,
                  frames: int, width: int, height: int, steps: int, fps: int, prefix: str,
                  last_frame: Path | None = None, upscale: int = 1, **_) -> Path:
+        """One attempt per endpoint acquisition; on failure, release, wait briefly, and retry up to self.retries."""
+        import time
+
+        last_err: Exception | None = None
+        for attempt in range(self.retries + 1):
+            try:
+                return self._generate_once(keyframe, out, seed, prompt=prompt, negative=negative, frames=frames, width=width,
+                                           height=height, steps=steps, fps=fps, prefix=prefix, last_frame=last_frame,
+                                           upscale=upscale)
+            except ComfyError as e:
+                last_err = e
+                if attempt < self.retries:
+                    if self.log:
+                        self.log.warn(f"attempt {attempt + 1} failed ({str(e)[:120]}); retrying", prefix=prefix)
+                    time.sleep(5)
+        raise last_err  # type: ignore[misc]
+
+    def _generate_once(self, keyframe: Path, out: Path, seed: int, *, prompt: str, negative: str, frames: int, width: int,
+                       height: int, steps: int, fps: int, prefix: str, last_frame: Path | None, upscale: int) -> Path:
         client = self.pool.acquire()
         try:
             image_ref = client.upload_image(keyframe)

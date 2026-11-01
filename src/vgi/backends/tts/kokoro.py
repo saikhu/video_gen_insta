@@ -35,8 +35,12 @@ class KokoroTTSBackend:
             self._pipe = KPipeline(lang_code=self.lang_code, device=self.device if self.device != "cpu" else None)
         return self._pipe
 
+    NATIVE_SR = 24000
+
     def synthesize(self, text: str, out_wav: Path, sample_rate: int = 24000, **_) -> tuple[float, list[WordTiming]]:
         import soundfile as sf
+
+        sample_rate = self.NATIVE_SR   # Kokoro always emits 24 kHz; assembly resamples to the reel rate
 
         pipe = self._pipeline()
         chunks: list[np.ndarray] = []
