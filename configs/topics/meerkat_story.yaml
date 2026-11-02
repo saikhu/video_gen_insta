@@ -1,0 +1,65 @@
+# Topic: "Where the Burrows Lead", a 16-chapter meerkat adventure (docs/stories/where-the-burrows-lead).
+# One job per chapter: `vgi new --topic meerkat_story --subject ch01` … ch16 (scripts/story_chapters.sh loops them).
+# Narrated adaptation: one storyteller voice tells the chapter; per-character dialogue voices and reference-image
+# identity conditioning are not supported yet (see the story's PRODUCTION.md).
+# A job freezes this file at `vgi new`; edits apply to chapters created afterwards.
+name: meerkat_story
+plugin: serial_story
+language: en
+style: meerkat_story
+voice: storyteller_en
+music_policy: none
+
+story_dir: docs/stories/where-the-burrows-lead
+corpus_dir: docs/stories/where-the-burrows-lead     # research cache key: editing the story docs re-runs research
+
+narration:
+  tone: "warm storyteller, close to the characters, gentle humor, real suspense"
+  words_per_second: 2.5
+
+depiction:
+  shot_whitelist: [wide, medium, two_shot, closeup, closeup_object, over_shoulder, insert, environment, aerial]
+  negative_prompt: "human, person, human hands, clothing beyond a single accessory, text, watermark, logo, deformed paws, extra limbs, extra tails, blurry"
+  # Fixed appearance per character (from CHARACTERS.md). In visual prompts the writer uses the name; the plugin
+  # swaps it for `tag` and appends `look` once per shot, so every keyframe and clip gets identical text.
+  # `look` must not contain any character's name.
+  characters:
+    tavi:
+      name: Tavi
+      role: anxious, inventive 17-year-old; touches his pouch clasp before volunteering an idea
+      tag: the sandy-cream young male meerkat with the clay-red pouch
+      look: "The sandy-cream meerkat is a 17-year-old male with a compact torso and slightly oversized ears, sandy cream fur, a pale muzzle, dark eye patches, a narrow dark break in the fur of his left brow, and a clay-red woven pouch at his right hip with its strap over his left shoulder"
+    sera:
+      name: Sera
+      role: bold, impulsive 18-year-old route-finder; keeps the childhood map in her wrap
+      tag: the russet young female meerkat with the teal wrap
+      look: "The russet meerkat is an 18-year-old female, a little taller, lean and long-limbed, with warm russet fur, a pale throat, a small fold on the outer edge of her right ear, a dark tail tip, and a muted teal utility wrap at her left hip with its strap over her right shoulder"
+    nima:
+      name: Nima
+      role: patient 12-year-old observer who hears what others talk over
+      tag: the small cool-brown meerkat girl with the ochre ankle cord
+      look: "The small cool-brown meerkat is a 12-year-old girl, shorter than the others, with cool earth-brown fur, rounded ears, a pale chin, a narrow darker stripe along her upper back, and an ochre braided cord on her right ankle"
+    kesh:
+      name: Kesh
+      role: capable, slightly formal 15-year-old organizer who knows every rope and route
+      tag: the broad golden-brown young male meerkat with the umber belt
+      look: "The golden-brown meerkat is a 15-year-old male, broad through the shoulders, with neatly groomed golden-brown fur, a darker muzzle, a small pale patch beneath his right eye, and a plain umber belt with a route-cloth loop at his left hip"
+    mara:
+      name: Mara
+      role: grounded adult steward and surface-weather watcher
+      tag: the stocky silver-muzzled adult female meerkat
+      look: "The adult meerkat is a stocky female settlement steward with silver muzzle fur and a plain ochre shoulder cloth"
+
+caption_footer: "Original characters. Part of a continuing animated story."
+hashtags: ["#animation", "#meerkat", "#fantasy", "#adventure", "#shortfilm", "#story", "#aiart", "#reels"]
+
+stages:
+  research:
+    backend: stub               # the brief is read from the story files; no model call
+  script:
+    beats_min: 12
+    beats_max: 18
+    target_seconds_min: 80      # chapters are 80-100 s (story.yaml target_seconds)
+    target_seconds_max: 100
+    max_titles: 1               # the chapter title on the first beat
+    fact_check: false

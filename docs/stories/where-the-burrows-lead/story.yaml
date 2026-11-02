@@ -4,7 +4,7 @@ status: draft_for_creative_review
 title: Where the Burrows Lead
 date: '2026-11-03'
 branch: meerkat-story
-pipeline_topic_registered: false
+pipeline_topic_registered: true          # as narrated adaptation: configs/topics/meerkat_story.yaml
 rendered_media: false
 language: en
 delivery: English-speaking character dialogue

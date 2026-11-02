@@ -39,6 +39,6 @@ Nima, Kesh, the supporting adult, place names, precise mechanism, specific incid
 
 ## Current deliverable
 
-This package contains a complete treatment and chapter outline. It is not a finished screenplay or a generated film. No third topic has been registered in the video pipeline. Each chapter is a dramatic sequence containing multiple shots; it is not equivalent to the pipeline's current narration-based `Scene` object.
+This package contains a complete treatment and chapter outline. It is not a finished screenplay or a generated film. Each chapter is a dramatic sequence containing multiple shots; it is not equivalent to the pipeline's current narration-based `Scene` object. The pipeline can render a **narrated adaptation** of each chapter as topic `meerkat_story` (see "Story chapters" in the root README); dialogue voices and identity conditioning remain open.
 
 Review the characters, mechanism and ending before scripting and visual development. Once those are accepted, the first production milestone is consistent character turnarounds and a short two-character dialogue/acting test.

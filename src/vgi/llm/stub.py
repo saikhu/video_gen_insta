@@ -84,12 +84,52 @@ PELICAN = [
        tr="flash"),
 ]
 
+B = "paws on stone, soft echo, distant voices"
+BURROWS = [   # meerkat_story chapter 1; names are left in visual prompts so the plugin's appearance swap is exercised
+    _b("A small reed model turned under Tavi's paw.", [
+        ("closeup_object", "Tavi turns a reed model of the passages on a cluttered workshop bench, warm lamplight", "slow push-in", "reed creak, soft breathing")],
+       title="A DOOR WHERE THERE WASN'T ONE"),
+    _b("Then the burrow spoke. One low note. Two. Three.", [
+        ("medium", "Tavi freezes at the bench, ears turned toward the wall, dust trembling in a shaft of light", "static, slight push-in", "three deep stone notes"),
+        ("insert", "a reed sleeve rolling off the bench toward a dark gallery mouth", "low tracking", "reed rolling on stone")]),
+    _b("He followed the sleeve into the gallery.", [
+        ("wide", "Tavi walks into a sandstone gallery with worn arcs carved in the walls, cool air moving dust", "low tracking from behind", B)]),
+    _b("Where a wall had always stood, an opening breathed cool air.", [
+        ("closeup", "Tavi stares at a fresh opening in the stone wall, fur stirring in the draft", "slow push-in", "a cool draft hissing"),
+        ("environment", "a newly opened passage glowing faintly blue from water far below", "slow drift forward", "distant dripping water")],
+       pause=0.8),
+    _b("\"Was that here yesterday?\" Sera asked, from the other side.", [
+        ("two_shot", "Sera appears in the new opening, grinning, while Tavi steps back in surprise", "handheld drift", "quick light paw steps"),
+        ("closeup", "Sera leans in, eyes bright with curiosity", "slow push-in", B)]),
+    _b("\"It wasn't here a minute ago,\" Tavi said.", [
+        ("closeup", "Tavi touches the clasp of his pouch, ears flattening a little", "static", "a soft clasp click")]),
+    _b("A neighbour took the new shortcut, and came back beside the same basket.", [
+        ("wide", "a background meerkat carrying a basket ducks into the opening and pops out of another doorway beside the same spot", "static wide", "basket creak, surprised chirp"),
+        ("two_shot", "Sera laughs while Tavi frowns at the two doorways", "slow pull-back", "a short laugh echoing")]),
+    _b("Sera found it funny. Tavi counted the marks on the wall.", [
+        ("insert", "three wedge-shaped marks cut into the gallery wall, lit by a thin shaft of sun", "slow pan across the marks", B),
+        ("closeup", "Tavi studies the marks with narrowed eyes", "slow push-in", "quiet breathing")]),
+    _b("They matched the wedges on his model exactly.", [
+        ("insert", "Tavi holds the reed model up beside the wall marks, the wedge shapes identical", "rack focus from model to wall", "reed creak")],
+       pause=1.0),
+    _b("Then came a sound so small, almost no one would hear it.", [
+        ("closeup_object", "a stone sleeve settling into place in the wall, a tiny puff of dust", "extreme close-up, static", "a quiet return tick")]),
+    _b("Sera grinned. Tavi did not.", [
+        ("two_shot", "Sera grins at Tavi while he looks back down the gallery, worried", "slow push-in", "wind moving through passages")]),
+    _b("If the burrow was changing, what else was changing in Sunhollow?", [
+        ("wide", "Tavi and Sera climb toward the bright mouth of the burrow and the open court above", "slow crane up", "rising desert wind")],
+       tr="fade"),
+]
+
 
 class StubLLM:
     name = "stub"
 
+    def _beats(self):
+        return {"memes": PELICAN, "meerkat_story": BURROWS}.get(self.topic, BADR)
+
     def generate(self, system: str, prompt: str, temperature: float | None = None) -> ParsedResult:
-        beats = PELICAN if self.topic == "memes" else BADR
+        beats = self._beats()
         lines = [f"LOGLINE: (stub) {self.subject}", "OPEN LOOP: (stub)", "BEATS:"]
         for i, b in enumerate(beats, 1):
             lines.append(f"{i}. {b.narration}" + (f"  TITLE: {b.on_screen_text}" if b.on_screen_text else ""))
@@ -126,12 +166,15 @@ class StubLLM:
                 sources=[SourceRef(id="stub", title="Stub source", license="n/a")])
             return ParsedResult(obj=obj, model="stub")
         if schema is ScriptDraft:
-            beats = PELICAN if self.topic == "memes" else BADR
-            title = "Percival returns a book" if self.topic == "memes" else f"{self.subject}: the morning that decided everything"
+            beats = self._beats()
+            title = {"memes": "Percival returns a book", "meerkat_story": "A Door Where There Wasn't One"}.get(
+                self.topic, f"{self.subject}: the morning that decided everything")
             hook = beats[0].narration
+            history = self.topic not in ("memes", "meerkat_story")
+            tags = {"memes": ["#funny", "#animals"], "meerkat_story": ["#animation", "#meerkat"]}
             obj = ScriptDraft(title=title, hook=hook, beats=beats, cta="Follow for the next story.",
-                              hashtags=["#IslamicHistory", "#Badr", "#Seerah"] if self.topic != "memes" else ["#funny", "#animals"],
-                              sources_for_caption=["Wikipedia: Battle of Badr"] if self.topic != "memes" else [])
+                              hashtags=tags.get(self.topic, ["#IslamicHistory", "#Badr", "#Seerah"]),
+                              sources_for_caption=["Wikipedia: Battle of Badr"] if history else [])
             return ParsedResult(obj=obj, model="stub")
         if schema is IdeaPool:
             ideas = [Idea(premise=f"A pelican tries to return a library book {i} years late", format="animal_skit",

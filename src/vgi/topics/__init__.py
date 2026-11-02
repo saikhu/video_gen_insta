@@ -1,7 +1,8 @@
 from .islamic_battles import IslamicBattlesTopic
 from .memes import MemesTopic
+from .serial_story import SerialStoryTopic
 
-PLUGINS = {p.name: p for p in (IslamicBattlesTopic, MemesTopic)}
+PLUGINS = {p.name: p for p in (IslamicBattlesTopic, MemesTopic, SerialStoryTopic)}
 
 
 def get_plugin(name: str):

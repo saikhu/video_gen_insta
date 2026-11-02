@@ -1,0 +1,8 @@
+# Visual style preset for the meerkat story track (docs/stories/where-the-burrows-lead/CHARACTERS.md).
+prompt_prefix: "Still from a soft cinematic 3D animated feature film, realistic meerkats with soft detailed fur, long muzzles, small ears, dark eye patches and expressive faces, animal-shaped bodies and paws,"
+prompt_suffix: "fantasy desert settlement of ancient sandstone burrows, motivated cinematic light, gentle depth of field, rich warm color, highly detailed, consistent character design"
+# Z-Image Turbo ignores negative prompts (no CFG): exclusions must be phrased positively above.
+negative_prompt: "photograph, live action, human, anime, flat 2D, text, watermark, logo"
+reference_images: []            # approved character turnarounds go here once they exist (FLUX 3 Klein)
+lora: null
+grade_lut: null

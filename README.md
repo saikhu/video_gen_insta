@@ -1,7 +1,7 @@
 # vgi — local, quality-first AI video pipeline for Instagram Reels
 
 Turns a topic into a finished 9:16 Reel with cinematic visuals, narration, animated captions and a
-compliance check, entirely on your own hardware. Two content tracks ship today:
+compliance check, entirely on your own hardware. Three content tracks ship today:
 
 Scripts are written by a **local LLM** (Ollama, `qwen3.8:27b` by default) with no API key; Claude is an
 optional backend. Each reel is a short **dramatic film**: a cold-open hook, rising stakes, a turn held on a
@@ -12,6 +12,7 @@ cuts a minute), title cards, per-beat transitions, and the video model's own sou
 |---|---|---|
 | `islamic_battles` | documentary shorts about famous early-Islamic battles | cited fact sheet from a local, open-license corpus; strict depiction rules |
 | `memes` | original AI-written jokes as short clips | invented characters only; originality check against past jokes |
+| `meerkat_story` | the 16 chapters of an animated story, narrated ([below](#story-chapters-where-the-burrows-lead-meerkat_story)) | chapter brief from `docs/stories/where-the-burrows-lead`; fixed character appearances |
 
 Everything runs on a MacBook Pro (M5 Max 48 GB) for authoring and keyframes, and on a Linux
 2×RTX 3090 box for motion video through ComfyUI. The research behind the model choices, the
@@ -140,6 +141,7 @@ env) at `vgi new`, so the same job folder renders on either machine.
 | `env/mac_m5max.yaml`, `env/linux_2x3090.yaml`, `env/linux_4x4090.yaml` | one **env profile** per machine: backends per stage, ComfyUI endpoints, RAM/VRAM, electricity rate. Selected with `--env <name>`, else `VGI_ENV`, else auto-detected (macOS → `mac_m5max`; Linux → by GPU count) |
 | `topics/islamic_battles.yaml` | corpus dir, subjects, depiction rule + shot whitelist, honorifics, `music_policy: native_only`, hashtags |
 | `topics/memes.yaml` | formats, banned characters/topics, originality threshold, ACE-Step prompt |
+| `topics/meerkat_story.yaml` | story folder, fixed character appearances (`depiction.characters`), chapter length 80-100 s |
 | `stages/research.yaml` … `stages/publish.yaml` | one file per stage: models, steps, resolutions, candidates, xfade/tail, caption style, QA thresholds |
 | `styles/*.yaml`, `voices/*.yaml` | prompt prefix/suffix and references; narrator voice per engine |
 | `pronunciation/lexicon.yaml` | Arabic names → IPA (Kokoro inline `[Badr](/bædr/)`) and respellings |
@@ -218,10 +220,38 @@ export carries the AI disclosure in the caption and `ai_generated: true` in `met
 3. Memes track end to end with ACE-Step beds; Korean-language track (Qwen3-TTS / ElevenLabs).
 4. v2 publishing: Cloudflare R2 + Instagram API with Instagram Login, Trial Reels, 1-2 posts/day cron.
 
-## Third topic in story development
+## Story chapters: Where the Burrows Lead (`meerkat_story`)
 
-[Where the Burrows Lead](docs/stories/where-the-burrows-lead/README.md) is a proposed 24-minute
-meerkat fantasy adventure, released as sixteen connected 1–2 minute chapters. The development package
-contains the character bible, world rules, full treatment and chapter continuity plan. It is not yet
-a registered topic or a rendered movie; dialogue and character-consistency support are planned in its
-production handoff.
+[Where the Burrows Lead](docs/stories/where-the-burrows-lead/README.md) is a 24-minute meerkat fantasy
+adventure released as sixteen connected 80-100 s chapters. Each chapter is one job (`--subject ch01` …
+`ch16`); the `serial_story` plugin builds the chapter brief from `story.yaml` + `CHAPTERS.md` (this chapter's
+outline, the previous chapter's exit question, facts already established, the cast, the stable geography) and
+the writer turns it into beats and shots as for any reel.
+
+**What it is today: a narrated adaptation.** One storyteller voice (`configs/voices/storyteller_en.yaml`) tells
+the chapter, quoting at most one short line per beat; there are no per-character voices or lip-sync yet.
+Character identity comes from text: the writer names characters in visual prompts and the plugin swaps each
+name for the same fixed appearance sentence (`depiction.characters` in `configs/topics/meerkat_story.yaml`), so
+every keyframe and clip gets identical descriptions. There is no reference-image conditioning, so check
+identity in each storyboard and re-pick or `--reseed` shots that drift. Dialogue voices and identity
+conditioning are the next steps in the story's [production handoff](docs/stories/where-the-burrows-lead/PRODUCTION.md).
+
+Run the chapters in order with `scripts/story_chapters.sh`. It reuses each chapter's newest job, so it resumes
+where it stopped, and `render`/`auto` stop at the first chapter in the range that is not ready:
+
+```bash
+DRY_RUN=1 scripts/story_chapters.sh auto 1 2   # optional: placeholder chapters through every stage, no models
+
+scripts/story_chapters.sh plan 1 4             # Part A for ch01-ch04: brief → script → keyframes → storyboard
+# review each outputs/jobs/<id>/04_storyboard/preview.html; fix shots, then approve:
+uv run vgi pick <id> 3.2 1                     # beat 3, shot 2 → keyframe candidate 1
+uv run vgi approve <id>
+scripts/story_chapters.sh render 1 4           # Part B in order: render → qa → export; stops at the first gap
+scripts/story_chapters.sh status               # chapter → job id → state, all 16
+```
+
+`scripts/story_chapters.sh auto 1 16` does everything unattended with auto-approval (no human review gate).
+The same steps by hand for one chapter: `uv run vgi new --topic meerkat_story --subject ch01`, then
+`plan`/`approve`/`render`/`qa`/`export` on that job as in the quick start. Each job freezes the topic file at
+`vgi new`, so edits to character descriptions apply to chapters created afterwards (delete a chapter's job
+folder to recreate it). Chapters are 80-100 s, so QA warns when one runs past `reel.max_seconds` (95 s).

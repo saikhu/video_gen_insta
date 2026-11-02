@@ -1,0 +1,10 @@
+# Storyteller voice for narrated story chapters (meerkat_story).
+kokoro:
+  voice: af_heart               # warm, close storyteller; alternatives: bf_emma (British), am_michael
+  lang_code: a
+elevenlabs:
+  voice_id: ""
+  model_id: eleven_v4
+fish_drama3:
+  reference_audio: ""
+  direction: "[warm] [storytelling] [gentle]"
