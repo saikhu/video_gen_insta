@@ -87,6 +87,11 @@ class Job:
     @classmethod
     def find(cls, jobs_root: Path, ref: str) -> "Job":
         root = Path(jobs_root)
+        if ref in ("latest", "last"):                     # job ids start with a timestamp
+            jobs = sorted(p for p in root.glob("*") if (p / "manifest.json").exists())
+            if not jobs:
+                raise FileNotFoundError(f"no jobs under {root}")
+            return cls(jobs[-1])
         direct = root / ref
         if direct.exists():
             return cls(direct)

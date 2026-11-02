@@ -10,7 +10,8 @@ frame_grid: 8                   # LTX frame count must be 8k+1
 max_clip_seconds: 10.0          # longer shots are split into equal I2V parts
 native_audio: true              # keep LTX-2.5's generated sound as the diegetic track
 sound_in_prompt: true           # append each shot's sound_prompt to the prompt ("Sound: hooves, wind")
-audio_negative: ""              # topics add e.g. "music, singing" for the video model's audio
+sound_style: "only natural on-location sound, like a field recording"   # opens the Sound: sentence (steers away from score)
+audio_negative: ""              # appended to the negative prompt; the distilled LTX samples at CFG 1, which ignores it
 n_candidates: 1
 timeout_seconds: 1800
 retries: 1

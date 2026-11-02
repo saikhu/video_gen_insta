@@ -2907,6 +2907,8 @@ dependencies = [
     { name = "pydantic-settings" },
     { name = "pyyaml" },
     { name = "rich" },
+    { name = "scipy" },
+    { name = "soundfile" },
     { name = "typer" },
     { name = "websocket-client" },
 ]
@@ -2951,6 +2953,8 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=13.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
+    { name = "scipy", specifier = ">=1.11" },
+    { name = "soundfile", specifier = ">=0.12" },
     { name = "soundfile", marker = "extra == 'tts'", specifier = ">=0.12" },
     { name = "typer", specifier = ">=0.15" },
     { name = "websocket-client", specifier = ">=1.8" },

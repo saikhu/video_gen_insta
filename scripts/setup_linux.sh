@@ -42,7 +42,17 @@ ok "GPUs: $GPU_COUNT · RAM: ${RAM_GB} GB · free disk under $(dirname "$COMFY_R
 ok "free disk under $(dirname "$MODELS_DIR") (models): ${MODELS_DISK_GB} GB"
 [ "$MODELS_DISK_GB" -ge 120 ] || warn "need ~120 GB free for models: set MODELS_DIR=/path/with/space"
 command -v python3 >/dev/null && ok "python3: $(python3 --version)"
-command -v ffmpeg >/dev/null && { ffmpeg -hide_banner -filters 2>/dev/null | grep -q ' ass ' && ok "ffmpeg with libass" || warn "ffmpeg lacks libass (captions): apt install ffmpeg usually includes it; otherwise build with --enable-libass"; } || warn "ffmpeg missing: sudo apt install -y ffmpeg"
+# vgi picks the first ffmpeg that has libass (PATH, then /usr/local/bin, /usr/bin), so check the same list.
+# Capture the filter list first: `ffmpeg | grep -q` under pipefail fails with SIGPIPE even when libass is there.
+LIBASS_FF=""
+for f in "$(command -v ffmpeg 2>/dev/null || true)" /usr/local/bin/ffmpeg /usr/bin/ffmpeg; do
+  [ -n "$f" ] && [ -x "$f" ] || continue
+  filters="$("$f" -hide_banner -filters 2>/dev/null || true)"
+  if [[ "$filters" == *" ass "* ]]; then LIBASS_FF="$f"; break; fi
+done
+if [ -n "$LIBASS_FF" ]; then ok "ffmpeg with libass: $LIBASS_FF"
+elif command -v ffmpeg >/dev/null; then warn "no ffmpeg with libass (captions): sudo apt install -y ffmpeg; or set VGI_FFMPEG=/path/to/ffmpeg"
+else warn "ffmpeg missing: sudo apt install -y ffmpeg"; fi
 [ "$INSPECT_ONLY" = 1 ] && { say "Inspect-only run finished"; exit 0; }
 
 # ---------------------------------------------------------------- 1. system packages
@@ -97,7 +107,7 @@ ok "extra_model_paths.yaml → $MODELS_DIR"
 say "vgi (pipeline) at $REPO_DIR"
 cd "$REPO_DIR"
 uv python pin 3.12 >/dev/null 2>&1 || true
-uv sync --extra dev --extra tts --extra qa          # torch (~3 GB on Linux) + kokoro: several minutes, progress shown
+uv sync --inexact --extra dev --extra tts --extra qa   # --inexact keeps spaCy's en_core_web_sm (misaki installs it at first use); torch (~3 GB on Linux) + kokoro: several minutes, progress shown
 uv pip install --python .venv/bin/python huggingface_hub
 [ -f .env ] || cp .env.example .env
 mkdir -p models
@@ -124,7 +134,7 @@ if [ "$WITH_LLM" = 1 ]; then
     # 2026-11: the Linux build ships as .tar.zst (the old .tgz URL returns 404)
     curl -fL --progress-bar https://ollama.com/download/ollama-linux-amd64.tar.zst | tar --zstd -x -C "$OLLAMA_DIR"
   fi
-  ok "ollama $("$OLLAMA_DIR/bin/ollama" --version 2>/dev/null | tail -1)"
+  ok "ollama $("$OLLAMA_DIR/bin/ollama" --version 2>&1 | grep -o '[0-9][0-9.]*[0-9]' | tail -1)"
   if [ "$USE_SYSTEMD" = 1 ]; then
     sed -e "s|__REPO__|$REPO_DIR|g" -e "s|__USER__|$USER|" "$REPO_DIR/comfy/systemd/vgi-ollama.service" | sudo tee /etc/systemd/system/vgi-ollama.service >/dev/null
     sudo systemctl daemon-reload && sudo systemctl enable vgi-ollama >/dev/null 2>&1 && sudo systemctl restart vgi-ollama

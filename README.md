@@ -48,7 +48,7 @@ platform policy constraints and the cost/revenue verdict live in `docs/` and the
 | **beat** | one or two spoken sentences (≤ 22 words) + optional title card, transition in, dramatic pause after | `configs/stages/script.yaml` (`beats_min/max`, `beat_words_max`) |
 | **shot** | one camera setup under a beat: keyframe → 2-4 s LTX clip with its own camera move and diegetic sound | `shots_per_beat_max`, `video.min_shot_seconds` |
 | **timeline** | beat = pre-roll + narration + post-roll + pause; shots split it; transitions overlap; narration runs continuously over the cut | `core/timeline.py`, `configs/stages/video.yaml` (pacing, `transitions`) |
-| **mix** | narration on top; the clips' sound side-chain ducked under it so it swells in gaps; optional bed | `configs/stages/assemble.yaml` (`diegetic_gain_db`, `duck_*`, `grade`) |
+| **mix** | narration on top; the clips' own sound cleaned (invented music stripped, silent heads skipped, levels matched) and rebuilt into one continuous location track with crossfades that lead each cut; a quiet wind room tone underneath; a fixed gain envelope rides it under the voice and lets it swell in pauses | `configs/stages/assemble.yaml` (`sound:`, `grade`), `src/vgi/media/sound.py` |
 
 The writer works in two passes: a free-text **treatment** (`02_script/treatment.md`, shown in the
 storyboard) using the craft rules in `src/vgi/topics/craft.py`, then a structured pass into beats and shots.
@@ -62,12 +62,13 @@ fixes only those (`repair_rounds`, log in `02_script/review.json`).
 |---|---|
 | Config layer, job manifest, caching, CLI, dry-run, tests | done |
 | Research + script via a **local LLM** (Ollama; citations emulated by numbered sources; JSON-schema output) | verified on the Mac with `qwen2.5:14b`; the box uses `qwen3.8:27b` (`vgi llm pull`) |
-| Dramatic structure: treatment → 10-16 beats × 1-3 shots, title cards, transitions, ducked diegetic sound, film grade | **verified** on the Mac end to end (local LLM → 28 shots → Z-Image keyframes → Kokoro → assembly, QA pass); LTX render on the box pending |
+| Dramatic structure: treatment → 10-16 beats × 1-3 shots, title cards, transitions, film grade | **verified** on the box: `qwen3.8:27b` → 11 beats / 33 shots → LTX-2.5 on 4×4090 → QA pass |
+| Sound design: music stripped from LTX audio, continuous location track, voice-led mix | **verified** by re-mixing the box reel (no dropouts at cuts, −14.1 LUFS); listen and tune `assemble.sound` |
 | Claude backend (optional, `backend: claude`) | code done; needs `ANTHROPIC_API_KEY` |
 | Keyframes on the Mac (mflux Z-Image Turbo, in-process) | **verified**: 768×1344, ~44 s/image, ~32 GB peak |
 | Narration (Kokoro-82M, lexicon IPA, engine word timings) | **verified** |
 | Captions (ASS karaoke, honorific → ﷺ merge, safe zones) | **verified** |
-| Assembly (xfade, two-pass loudnorm −14 LUFS, faststart) and QA (spec, YuNet faces, loudness) | **verified** |
+| Assembly (xfade, loudness to −14 LUFS with a linear gain + limiter, faststart) and QA (spec, YuNet faces, loudness, audio dropouts) | **verified** |
 | Motion video (LTX-2.5 on the Linux box via ComfyUI) | **verified** on a 4×4090 box: full 8-scene reel rendered in parallel (~8.5 min video stage), 1088×1920 25 fps clips with LTX's native audio, QA passed |
 | Memes track end to end, ACE-Step music, Fish Drama 3 voice | v1.5 |
 | Instagram API publishing (`is_ai_generated=true`, R2 hosting) | v2 |
@@ -86,13 +87,16 @@ uv run vgi doctor
 ```bash
 uv run vgi corpus wikipedia "Battle of Badr"      # CC BY-SA text with attribution header → data/corpus/islamic/
 uv run vgi new --topic islamic_battles --subject "Battle of Badr"
-uv run vgi plan <job>                             # Part A → 04_storyboard/preview.html
-uv run vgi pick <job> 3.2 1                       # beat 3, shot 2 → keyframe candidate 1
-uv run vgi tidy <job>                             # optional: re-apply honorific/length/pacing fixes after hand edits
-uv run vgi approve <job>
-uv run vgi render <job>                           # Part B
-uv run vgi qa <job> && uv run vgi export <job>    # → 09_final/{<job>.mp4, cover.jpg, caption.txt, metadata.json}
+uv run vgi plan latest                            # Part A → 04_storyboard/preview.html
+uv run vgi pick latest 3.2 1                      # beat 3, shot 2 → keyframe candidate 1
+uv run vgi tidy latest                            # optional: re-apply honorific/length/pacing fixes after hand edits
+uv run vgi approve latest
+uv run vgi render latest                          # Part B
+uv run vgi qa latest && uv run vgi export latest  # → 09_final/{<job id>.mp4, cover.jpg, caption.txt, metadata.json}
 ```
+
+`latest` means the newest job. Any unique part of a job id also works (`vgi render 032134`); `uv run vgi jobs`
+lists them. Don't type `<job>` literally: bash reads `<` as a file redirect.
 
 `uv run vgi run <job> --dry-run` pushes a placeholder reel through every stage with no models or
 API key (the test suite does the same). `uv run vgi jobs`, `vgi logs <job> --stage video` and
@@ -153,7 +157,7 @@ src/vgi/
   topics/                islamic_battles.py (corpus retrieval, prompts, validators), memes.py (idea pool, originality)
   stages/                one module per stage + the Jinja2 storyboard template
   backends/              comfy_client.py, image/{mflux,comfy}, video/{ken_burns,comfy_video}, tts/kokoro
-  media/                 ffmpeg.py (segments, xfade, loudnorm, Ken Burns), ass.py (karaoke), images.py
+  media/                 ffmpeg.py (segments, xfade, loudness, Ken Burns), sound.py (clip sound → location track, mix), ass.py (karaoke), images.py
 comfy/                   API-format workflow templates (to export), models.yaml, custom_nodes.txt, systemd unit
 scripts/                 setup_linux.sh (idempotent install), comfy_instance.sh, comfy_tmux.sh, comfy_smoke.sh, ui_to_api.py
 configs/                 all parameters (see above)
@@ -171,7 +175,7 @@ tests/                   config precedence, state machine, caching, caption math
 | keyframes (Linux) | Z-Image Turbo int8 (Apache) by default; FLUX 3 Image Klein optional | FLUX has the top open image Elo, but its HF repo card calls the Kommunity license non-commercial while other sources say free under $5M — verify before monetizing |
 | video | LTX-2.5 int8_convrot (free < $10M) | synchronized native audio, portrait, first/last-frame chaining; Wan 2.2 (Apache) as fallback |
 | narration | Kokoro-82M (Apache) → Fish Drama 3 later | word timestamps for free; IPA overrides; Fish needs ~39 GB VRAM |
-| music | none (Islamic) / ACE-Step 1.5 (memes) | no instruments policy; LTX's diegetic audio carries ambience |
+| music | none (Islamic) / ACE-Step 1.5 (memes) | no instruments policy; LTX's own sound, with its invented score stripped, carries the ambience |
 | LLM | local `qwen3.8:27b` via Ollama (Apache 2.0, 17.7 GB, fits one 4090) | free; GPU hand-off frees ComfyUI first; Claude Opus 5.5 optional (≈ $0.25/script) |
 
 Excluded on license grounds: MiniMax H3 and HunyuanVideo 1.5 (territory restrictions incl. Korea),
@@ -202,6 +206,8 @@ export carries the AI disclosure in the caption and `ai_generated: true` in `met
 | `cannot import name '_IntegralLike'` | Pillow 13 on Python 3.12 → already pinned `pillow<13`; rerun `uv sync` |
 | mflux writes `scene_01_c0_1.png` | mflux never overwrites; the backend pre-deletes targets and settles suffixed files |
 | `-inf` in loudnorm | audio is silent (stub TTS) → pass 2 is skipped automatically, QA warns |
+| music or drones under the narration | LTX invents a score; `assemble.sound.demusic` strips sustained tones (`demusic_keep` lower = stronger). Negative prompts do nothing: the distilled model samples at CFG 1 |
+| sound jumps or holes at cuts | see `09_final/assemble.json` → `shot_sound` (per-shot level, music removed, unused shots); raise `sound.xfade_s` or `level_match` |
 | Wikipedia 403 | set a descriptive `VGI_HTTP_UA` (Wikimedia's user-agent policy) |
 | `plan changed after approval` | `vgi approve <job>` again (the hash protects you from rendering an unreviewed edit) |
 

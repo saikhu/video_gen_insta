@@ -42,6 +42,9 @@ stages:
     target_seconds_max: 40
   tts:
     speed: 1.05
+  assemble:
+    sound:
+      room_tone: none           # no desert wind under jokes
   music:
     engine: ace_step
     prompt: "light playful ukulele, upbeat, no vocals"

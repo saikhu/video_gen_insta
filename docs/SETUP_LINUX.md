@@ -105,14 +105,15 @@ The spec files in `comfy/specs/` say which node inputs get which placeholder and
 
 ```bash
 uv run vgi new --topic islamic_battles --subject "Battle of Badr"      # --env <profile> only if auto-detection is wrong
-uv run vgi plan <job>            # Claude if ANTHROPIC_API_KEY is set, else stub; keyframes via Z-Image Turbo on GPU
-uv run vgi approve <job>
-uv run vgi run <job> --from tts --until video --scene 1       # narration (fast, CPU) + ONE LTX-2.5 clip; watch `vgi logs <job> --stage video`
+uv run vgi plan latest           # local LLM (Ollama) writes the script; keyframes via Z-Image Turbo on GPU
+uv run vgi approve latest
+uv run vgi run latest --from tts --until video --scene 1      # narration (fast, CPU) + ONE LTX-2.5 clip; watch `vgi logs latest --stage video`
 ```
 
 Record the measured seconds per clip as a comment under `stages.video` in the env profile you used
 (`configs/env/linux_4x4090.yaml` on the 4090 box),
-then render the whole reel: `uv run vgi render <job> && uv run vgi qa <job> && uv run vgi export <job>`.
+then render the whole reel: `uv run vgi render latest && uv run vgi qa latest && uv run vgi export latest`.
+`latest` is the newest job; any unique part of a job id works too (`uv run vgi jobs` lists them).
 
 ## 5. Driving the box from the Mac (optional)
 

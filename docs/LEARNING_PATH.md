@@ -75,12 +75,11 @@ explains one box of that diagram or one line of that manifest.
 
 ### 2.1 ffmpeg fundamentals  ⏱ 6 h (the highest-leverage skill in this repo)
 - **Why**: every segment, transition, caption burn, loudness pass and Ken Burns move is one ffmpeg command.
-- 📂 `src/vgi/media/ffmpeg.py` — read `make_segment`, `concat_xfade`, `finalize`, `ken_burns` with the
+- 📂 `src/vgi/media/ffmpeg.py` — read `make_shot_segment`, `xfade_chain`, `finalize`, `ken_burns` with the
   filtergraph docs open.
 - 📖 ffmpeg filters documentation (ffmpeg.org/ffmpeg-filters.html): `scale`, `crop`, `fps`, `tpad`,
-  `xfade`, `acrossfade`, `amix`, `adelay`, `aresample`, `aformat`, `sidechaincompress`, `zoompan`,
-  `loudnorm`, `ass`. The "filtergraph syntax" section (labels `[v]`, chains, `;`).
-- 🧪 Reproduce `concat_xfade` by hand for 3 clips and compute the offsets. Then change the transition to
+  `xfade`, `aresample`, `zoompan`, `loudnorm`, `volume`, `alimiter`, `ass`. The "filtergraph syntax" section (labels `[v]`, chains, `;`).
+- 🧪 Reproduce `xfade_chain` by hand for 3 clips and compute the offsets. Then change the transition to
   `wipeleft` and watch the result.
 
 ### 2.2 Containers, codecs and the Instagram spec  ⏱ 2 h
@@ -92,11 +91,24 @@ explains one box of that diagram or one line of that manifest.
 
 ### 2.3 Loudness: EBU R128, LUFS and true peak  ⏱ 2 h
 - **Why**: platforms normalize audio; −14 LUFS / −1 dBTP keeps narration consistent and un-clipped.
-  Two-pass `loudnorm` measures first (`print_format=json`) and then applies `linear=true`.
-- 📂 `media/ffmpeg.py::loudnorm_measure`, `finalize`; `stages/qa.py` loudness block
+  `loudnorm` measures first (`print_format=json`); `finalize` then applies one static gain plus a limiter,
+  because loudnorm's own second pass silently turns dynamic (and pumps) whenever the gain would clip.
+- 📂 `media/ffmpeg.py::loudnorm_measure`, `linear_loudness`, `finalize`; `stages/qa.py` loudness block
 - 📖 EBU Tech 3341/3342 summaries; ffmpeg `loudnorm` filter docs; an article on "why two-pass loudnorm".
 - 🧪 Run the measurement on `final.mp4`, then on a scene WAV, and explain the difference between
   integrated loudness and true peak.
+
+### 2.3a Sound design: spectrograms, HPSS, crossfades, ducking  ⏱ 4 h
+- **Why**: LTX-2.5 makes a new soundtrack per clip. With 2-3 s shots that means a new soundscape at every cut,
+  silent heads (holes at the cut) and an invented music drone (negative prompts do nothing at CFG 1).
+  `media/sound.py` rebuilds one continuous location track: high-pass, harmonic/percussive separation to strip
+  sustained tones, level matching, mirrored edges, equal-power crossfades that lead the cut (J-cut), a synthetic
+  room tone, and a fixed gain envelope under the narration instead of a side-chain compressor.
+- 📂 `src/vgi/media/sound.py`, `stages/assemble.py`, `configs/stages/assemble.yaml` (`sound:`), `tests/test_sound.py`
+- 📖 Fitzgerald, "Harmonic/percussive separation using median filtering" (DAFx 2010); any primer on reading
+  spectrograms; equal-power crossfades; J-cuts and L-cuts in film editing; room tone.
+- 🧪 Render `ffmpeg -i final.mp4 -lavfi showspectrumpic=s=1600x500:fscale=log spec.png` before and after setting
+  `demusic: false`, and find the horizontal lines (sustained tones) that the filter removes.
 
 ### 2.4 Subtitles: ASS/SSA and libass  ⏱ 3 h
 - **Why**: karaoke captions (`\kf`), pop-in (`\fad`), styles with outline/shadow, `PlayResY` and
@@ -219,10 +231,10 @@ explains one box of that diagram or one line of that manifest.
 ### 4.5a Short-form storytelling and editing  ⏱ 4 h
 - **Why**: retention is decided in the first 1.5 s and by cut rhythm. The craft rules (cold open, stakes, escalation,
   the turn, callback ending) and the beat/shot timeline encode this.
-- 📂 `src/vgi/topics/craft.py`, `src/vgi/core/timeline.py`, `configs/stages/video.yaml` (pacing), `assemble.yaml` (ducking)
+- 📂 `src/vgi/topics/craft.py`, `src/vgi/core/timeline.py`, `configs/stages/video.yaml` (pacing), `assemble.yaml` (`sound:`)
 - 📖 Walter Murch, *In the Blink of an Eye* (why cuts work); any screenwriting primer on the three-act structure;
-  side-chain compression in audio mixing.
-- 🧪 Change `pause_after` on the turn beat from 0.8 to 1.6 and `duck_release_ms` from 450 to 900; watch how the
+  J-cuts, room tone and dialogue ducking in film sound.
+- 🧪 Change `pause_after` on the turn beat from 0.8 to 1.6 and `sound.duck_release_s` from 0.6 to 1.2; watch how the
   moment lands differently.
 
 ### 4.5 Prompt design for images and video  ⏱ 2 h

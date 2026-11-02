@@ -26,6 +26,10 @@ class JobLogger:
         with (self.log_dir / f"{self.stage or 'job'}.jsonl").open("a", encoding="utf-8") as f:
             f.write(json.dumps(rec, default=str, ensure_ascii=False) + "\n")
 
+    def debug(self, msg: str, **data: Any) -> None:
+        """JSONL only (not printed)."""
+        self.event("debug", msg=msg, **data)
+
     def info(self, msg: str, **data: Any) -> None:
         self.event("info", msg=msg, **data)
         if not self.quiet:

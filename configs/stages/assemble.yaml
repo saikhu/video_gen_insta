@@ -1,14 +1,30 @@
-# Stage: assemble. Shots joined by per-beat transitions; one continuous narration track; the clips' own sound
-# ducked under the voice (it swells in pauses); film grade; captions; two-pass loudnorm -> final.mp4
+# Stage: assemble. Shots joined by per-beat transitions (picture only); the clips' own sound rebuilt into one
+# continuous location track (media/sound.py); narration on top; film grade; captions; loudness pass -> final.mp4
 crf: 18
 preset: slow
 pix_fmt: yuv420p
-loudnorm_two_pass: true
+loudnorm_two_pass: true         # measure, then one linear gain + limiter (no dynamic loudnorm pumping)
 lra: 11
-diegetic_gain_db: -6            # clip sound level before ducking
-duck_threshold: 0.03            # side-chain: how soon narration pushes the clip sound down
-duck_ratio: 6
-duck_release_ms: 450            # how fast the sound swells back in a pause
+sound:                          # levels marked "vs voice" are relative to the narration
+  demusic: true                 # strip sustained tones: LTX invents a score per clip, and CFG 1 ignores negatives
+  demusic_keep: 0.08            # fraction of the tonal part kept (1 = filter off)
+  highpass_hz: 90               # cut the rumble that masks the voice
+  min_content_s: 0.5            # a shot with less real sound is covered by its neighbours
+  level_match: 0.75             # 0..1: pull every shot toward one level (1 = flat, 0 = as generated)
+  max_boost_db: 12
+  max_shortfall_db: 12          # a shot still this far under the others after boosting is left to its neighbours
+  xfade_s: 0.5                  # equal-power crossfade between neighbouring shots' sound
+  jcut_s: 0.12                  # the next shot's sound starts this much before its picture (J-cut)
+  start_fade_s: 0.3
+  end_fade_s: 1.5               # the whole mix fades out over the last 1.5 s
+  voice_db: -20                 # narration level before the final loudness pass
+  diegetic_db: -15              # location sound under the voice (vs voice)
+  diegetic_gap_db: -7           # location sound in gaps and dramatic pauses (vs voice)
+  duck_attack_s: 0.25           # ramp down before a line starts
+  duck_release_s: 0.6           # ramp back up after it ends
+  presence_dip_db: -3           # carve ~2.8 kHz out of the beds so words stay clear
+  room_tone: wind               # wind | none: continuous air under everything, never digital silence
+  room_tone_db: -28             # vs voice
 grade:
   enabled: true
   contrast: 1.07

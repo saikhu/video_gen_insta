@@ -231,10 +231,19 @@ def loudnorm_measure(path: Path, i: float, tp: float, lra: float) -> dict[str, A
     return data
 
 
+def linear_loudness(measured_i: float, target_i: float, tp: float) -> str:
+    """One static gain to the target loudness, then a peak limiter with ~1 dB of headroom below the true-peak target
+    (inter-sample peaks and AAC overshoot). loudnorm's own second pass silently switches to dynamic mode whenever the
+    gain would clip, and its moving gain makes ambience pump."""
+    gain = target_i - measured_i
+    limit = max(0.0625, min(1.0, 10 ** ((tp - 1.0) / 20)))
+    return f"volume={gain:.2f}dB,alimiter=limit={limit:.4f}:attack=5:release=60:level=false"
+
+
 def finalize(src: Path, out: Path, ass_rel: str | None, measured: dict[str, Any] | None, i: float, tp: float,
              lra: float, crf: int, preset: str, pix_fmt: str, fps: int, sample_rate: int, audio_kbps: int,
              font_dirs: list[str], cwd: Path, grade: list[str] | None = None) -> None:
-    """Grade + burn captions + apply loudnorm (pass 2) + faststart. `ass_rel` is relative to cwd (avoids escaping)."""
+    """Grade + burn captions + linear loudness (gain + limiter) + faststart. `ass_rel` is relative to cwd."""
     vf = list(grade or [])
     if ass_rel and not has_libass():
         ass_rel = None  # caller logs the warning; output is produced without burned-in captions
@@ -243,9 +252,7 @@ def finalize(src: Path, out: Path, ass_rel: str | None, measured: dict[str, Any]
         vf.append(f"ass=filename={ass_rel}" + (f":fontsdir={fonts}" if fonts else ""))
     vf.append(f"format={pix_fmt}")
     if measured and not measured.get("unmeasurable"):
-        af = (f"loudnorm=I={i}:TP={tp}:LRA={lra}:measured_I={measured['input_i']}:measured_TP={measured['input_tp']}"
-              f":measured_LRA={measured['input_lra']}:measured_thresh={measured['input_thresh']}"
-              f":offset={measured['target_offset']}:linear=true:print_format=summary")
+        af = linear_loudness(float(measured["input_i"]), i, tp)
     else:
         af = f"loudnorm=I={i}:TP={tp}:LRA={lra}"
     run(["ffmpeg", "-y", "-v", "error", "-i", str(src), "-vf", ",".join(vf), "-af", af, "-r", str(fps),
@@ -282,87 +289,45 @@ def grade_filters(cfg: dict[str, Any] | None) -> list[str]:
 PAD_FRAMES = 3
 
 
-def make_shot_segment(clip: Path, out: Path, length: float, width: int, height: int, fps: int, sample_rate: int,
-                      use_clip_audio: bool = True) -> None:
-    """Normalize one shot to reel geometry. Audio is exactly `length` seconds (sample-accurate, keeps sync); video
-    gets PAD_FRAMES extra frames because frame rounding would otherwise leave the next xfade window a fraction of a
-    frame short, which makes ffmpeg's xfade silently stop emitting video. The extra frames fall inside the next
-    transition (or are trimmed at the end)."""
+def make_shot_segment(clip: Path, out: Path, length: float, width: int, height: int, fps: int) -> None:
+    """Normalize one shot's picture to reel geometry (sound is rebuilt separately in media/sound.py). The video gets
+    PAD_FRAMES extra frames because frame rounding would otherwise leave the next xfade window a fraction of a frame
+    short, which makes ffmpeg's xfade silently stop emitting video. The extra frames fall inside the next transition
+    (or are trimmed at the end)."""
     vlen = length + PAD_FRAMES / fps
-    graph = [f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},fps={fps},setsar=1,"
-             f"tpad=stop_mode=clone:stop_duration={vlen:.3f},trim=duration={vlen:.3f},setpts=PTS-STARTPTS[v]"]
-    if use_clip_audio and has_audio(clip):
-        graph.append(f"[0:a]aresample={sample_rate},aformat=channel_layouts=stereo,apad,atrim=duration={length:.3f},"
-                     f"asetpts=PTS-STARTPTS[a]")
-    else:
-        graph.append(f"anullsrc=r={sample_rate}:cl=stereo,atrim=duration={length:.3f}[a]")
-    run(["ffmpeg", "-y", "-v", "error", "-i", str(clip), "-filter_complex", ";".join(graph), "-map", "[v]", "-map", "[a]",
-         "-r", str(fps), "-c:v", "libx264", "-preset", "fast", "-crf", "16", "-pix_fmt", "yuv420p",
-         "-c:a", "aac", "-b:a", "192k", "-ar", str(sample_rate), "-ac", "2", str(out)])
+    graph = (f"[0:v]scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},fps={fps},setsar=1,"
+             f"tpad=stop_mode=clone:stop_duration={vlen:.3f},trim=duration={vlen:.3f},setpts=PTS-STARTPTS[v]")
+    run(["ffmpeg", "-y", "-v", "error", "-i", str(clip), "-filter_complex", graph, "-map", "[v]", "-an",
+         "-r", str(fps), "-c:v", "libx264", "-preset", "fast", "-crf", "16", "-pix_fmt", "yuv420p", str(out)])
 
 
-def xfade_chain(segments: list[Path], owns: list[float], boundaries: list[tuple[str, float]], out: Path, fps: int,
-                sample_rate: int) -> float:
-    """segments[i] is owns[i] + boundaries[i].duration long; boundary i joins segment i and i+1 with xfade/acrossfade.
-    Offsets are the cumulative `own` sums, so the result is exactly sum(owns) long."""
+def xfade_chain(segments: list[Path], owns: list[float], boundaries: list[tuple[str, float]], out: Path,
+                fps: int) -> float:
+    """Picture only. segments[i] is owns[i] + boundaries[i].duration long; boundary i joins segment i and i+1 with
+    xfade. Offsets are the cumulative `own` sums, so the result is exactly sum(owns) long."""
     if len(segments) == 1:
-        run(["ffmpeg", "-y", "-v", "error", "-i", str(segments[0]), "-c", "copy", str(out)])
+        run(["ffmpeg", "-y", "-v", "error", "-i", str(segments[0]), "-c", "copy", "-an", str(out)])
         return owns[0]
     inputs: list[str] = []
     for sgm in segments:
         inputs += ["-i", str(sgm)]
     graph: list[str] = []
-    vprev, aprev, offset = "[0:v]", "[0:a]", 0.0
+    vprev, offset = "[0:v]", 0.0
     for i in range(1, len(segments)):
         name, d = boundaries[i - 1]
         d = max(0.04, d)
         offset += owns[i - 1]
-        last = i == len(segments) - 1
-        vout, aout = ("[v]", "[a]") if last else (f"[v{i}]", f"[a{i}]")
+        vout = "[v]" if i == len(segments) - 1 else f"[v{i}]"
         graph.append(f"{vprev}[{i}:v]xfade=transition={name}:duration={d:.3f}:offset={offset:.3f}{vout}")
-        graph.append(f"{aprev}[{i}:a]acrossfade=d={d:.3f}:c1=tri:c2=tri{aout}")
-        vprev, aprev = vout, aout
-    run(["ffmpeg", "-y", "-v", "error", *inputs, "-filter_complex", ";".join(graph), "-map", "[v]", "-map", "[a]",
-         "-r", str(fps), "-c:v", "libx264", "-preset", "fast", "-crf", "16", "-pix_fmt", "yuv420p",
-         "-c:a", "aac", "-b:a", "192k", "-ar", str(sample_rate), str(out)])
+        vprev = vout
+    run(["ffmpeg", "-y", "-v", "error", *inputs, "-filter_complex", ";".join(graph), "-map", "[v]", "-an",
+         "-r", str(fps), "-c:v", "libx264", "-preset", "fast", "-crf", "16", "-pix_fmt", "yuv420p", str(out)])
     return round(sum(owns), 3)
 
 
-def mix_narration(video: Path, narration: list[tuple[Path, float]], total: float, out: Path, sample_rate: int,
-                  diegetic_gain_db: float = -6.0, duck_threshold: float = 0.03, duck_ratio: float = 6.0,
-                  duck_release_ms: int = 450, bed: Path | None = None, bed_gain_db: float = -18.0) -> None:
-    """Lay one continuous narration track (each line at its absolute start) over the cut; the clips' own sound
-    is side-chain ducked under the voice, so it swells in the gaps and dramatic pauses."""
-    inputs = ["-i", str(video)]
-    graph: list[str] = []
-    labels = []
-    for i, (wav, start) in enumerate(narration, start=1):
-        ms = int(round(start * 1000))
-        inputs += ["-i", str(wav)]
-        graph.append(f"[{i}:a]aresample={sample_rate},aformat=channel_layouts=stereo,adelay={ms}|{ms}[n{i}]")
-        labels.append(f"[n{i}]")
-    if labels:
-        graph.append(f"{''.join(labels)}amix=inputs={len(labels)}:normalize=0:dropout_transition=0,apad,"
-                     f"atrim=duration={total:.3f},asplit=2[narr][key]")
-    else:
-        graph.append(f"anullsrc=r={sample_rate}:cl=stereo,atrim=duration={total:.3f},asplit=2[narr][key]")
-    graph.append(f"[0:a]volume={diegetic_gain_db}dB[dg]")
-    graph.append("[key]asplit=2[k1][k2]")
-    graph.append(f"[dg][k1]sidechaincompress=threshold={duck_threshold}:ratio={duck_ratio}:attack=15:"
-                 f"release={duck_release_ms}[dgd]")
-    mix = ["[narr]", "[dgd]"]
-    if bed is not None:
-        inputs += ["-stream_loop", "-1", "-i", str(bed)]
-        bi = len(narration) + 1
-        graph.append(f"[{bi}:a]aresample={sample_rate},aformat=channel_layouts=stereo,volume={bed_gain_db}dB,"
-                     f"atrim=duration={total:.3f}[bed]")
-        graph.append(f"[bed][k2]sidechaincompress=threshold={duck_threshold}:ratio={duck_ratio}:attack=20:release=600[bedd]")
-        mix.append("[bedd]")
-    else:
-        graph.append("[k2]anullsink")
-    graph.append(f"{''.join(mix)}amix=inputs={len(mix)}:normalize=0:dropout_transition=0,alimiter=limit=0.95:level=false,"
-                 f"atrim=duration={total:.3f}[a]")
-    run(["ffmpeg", "-y", "-v", "error", *inputs, "-filter_complex", ";".join(graph), "-map", "0:v", "-map", "[a]",
+def mux_audio(video: Path, wav: Path, out: Path, total: float, sample_rate: int) -> None:
+    """Picture from `video`, sound from `wav`, cut to exactly `total` seconds."""
+    run(["ffmpeg", "-y", "-v", "error", "-i", str(video), "-i", str(wav), "-map", "0:v", "-map", "1:a",
          "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-ar", str(sample_rate), "-t", f"{total:.3f}", str(out)])
 
 

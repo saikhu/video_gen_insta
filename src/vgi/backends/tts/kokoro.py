@@ -33,7 +33,7 @@ class KokoroTTSBackend:
             from kokoro import KPipeline  # heavy import, lazy
 
             # "cpu" must stay on the CPU: KPipeline(device=None) means auto-select, which grabs the GPU on CUDA boxes
-            self._pipe = KPipeline(lang_code=self.lang_code, device=self.device or "cpu")
+            self._pipe = KPipeline(lang_code=self.lang_code, device=self.device or "cpu", repo_id="hexgrad/Kokoro-82M")
         return self._pipe
 
     NATIVE_SR = 24000

@@ -129,7 +129,8 @@ class VideoCfg(_Open):
     min_shot_seconds: float = 1.6
     transitions: dict[str, float] = Field(default_factory=lambda: {"cut": 0.04, "fade": 0.35, "fadeblack": 0.6, "flash": 0.25})
     sound_in_prompt: bool = True     # append each shot's sound_prompt to the video prompt (LTX generates audio)
-    audio_negative: str = ""         # appended to the video negative prompt (e.g. "music, singing")
+    audio_negative: str = ""         # appended to the video negative prompt (ignored by the distilled model at CFG 1)
+    sound_style: str = "only natural on-location sound, like a field recording"   # opens the Sound: sentence
 
 
 class TtsCfg(_Open):
@@ -144,8 +145,8 @@ class TtsCfg(_Open):
 
 class MusicCfg(_Open):
     engine: str = "none"
-    bed_gain_db: float = -18
-    duck_db: float = -12
+    bed_gain_db: float = -10         # bed level in gaps, vs the voice
+    duck_db: float = -10             # extra attenuation under narration
     prompt: str = ""
 
 
@@ -169,6 +170,29 @@ class CaptionsCfg(_Open):
     pop_in_ms: int = 80
 
 
+class SoundCfg(_Open):
+    """Sound design for the clips' own audio (media/sound.py). Levels in dB; *_db mix levels are relative to the voice."""
+    demusic: bool = True              # strip sustained tones: LTX invents a score, and CFG 1 ignores negative prompts
+    demusic_keep: float = 0.08        # fraction of the tonal part kept (1 = filter off)
+    highpass_hz: float = 90           # cut the rumble that masks the voice
+    min_content_s: float = 0.5        # a shot with less real sound is covered by its neighbours
+    level_match: float = 0.75         # 0..1: how far each shot is pulled toward one level (1 = flat)
+    max_boost_db: float = 12
+    max_shortfall_db: float = 12      # a shot still this far under the others after boosting is left to its neighbours
+    xfade_s: float = 0.5              # equal-power crossfade between neighbouring shots' sound
+    jcut_s: float = 0.12              # the next shot's sound starts this much before its picture (J-cut)
+    start_fade_s: float = 0.3
+    end_fade_s: float = 1.5
+    voice_db: float = -20             # narration level (RMS of the spoken parts, dBFS) before the final loudness pass
+    diegetic_db: float = -15          # location sound under the voice
+    diegetic_gap_db: float = -7       # location sound in gaps and dramatic pauses
+    duck_attack_s: float = 0.25       # ramp down before a line starts
+    duck_release_s: float = 0.6       # ramp back up after it ends
+    presence_dip_db: float = -3       # carve ~2.8 kHz out of the beds so words stay clear
+    room_tone: str = "wind"           # wind | none: continuous air under everything, never digital silence
+    room_tone_db: float = -28
+
+
 class AssembleCfg(_Open):
     transition: str = "fade"
     crf: int = 18
@@ -177,6 +201,7 @@ class AssembleCfg(_Open):
     loudnorm_two_pass: bool = True
     lra: float = 11
     font_dirs: list[str] = Field(default_factory=list)
+    sound: SoundCfg = Field(default_factory=SoundCfg)
 
 
 class QaCfg(_Open):

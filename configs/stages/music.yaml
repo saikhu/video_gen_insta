@@ -1,4 +1,4 @@
 # Stage: music. Background bed (topic music_policy decides whether it is used at all).
 engine: none                    # none | stub | ace_step
-bed_gain_db: -18
-duck_db: -12                    # extra attenuation under narration (sidechain)
+bed_gain_db: -10                # bed level in gaps, vs the voice
+duck_db: -10                    # extra attenuation under narration (gain envelope, see assemble.sound)

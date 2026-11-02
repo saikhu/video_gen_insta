@@ -16,6 +16,10 @@ def face_check(video: Path, model: Path, sample_fps: float, threshold: float, wi
         return {"checked": False, "reason": "opencv not installed (uv sync --extra qa)"}
     if not model.exists():
         return {"checked": False, "reason": f"face model missing: {model}"}
+    try:                                         # YuNet prints a harmless "new graph engine" warning otherwise
+        cv2.utils.logging.setLogLevel(cv2.utils.logging.LOG_LEVEL_ERROR)
+    except AttributeError:
+        pass
     det = cv2.FaceDetectorYN.create(str(model), "", (width, height), 0.8, 0.3, 500)
     cap = cv2.VideoCapture(str(video))
     fps = cap.get(cv2.CAP_PROP_FPS) or 25
@@ -82,6 +86,16 @@ class QaStage(Stage):
                 warns.append(f"true peak {tp:.1f} dBTP above {reel.true_peak_dbtp}")
         except Exception as e:  # noqa: BLE001
             warns.append(f"loudness measurement failed: {e}")
+        try:
+            from ..media.sound import decode_audio, silent_gaps
+
+            sr = 16000
+            gaps = silent_gaps(decode_audio(final, sr), sr)
+            checks["audio_dropouts"] = gaps
+            if gaps:
+                warns.append(f"audio drops to silence at {gaps[:8]} s")
+        except Exception as e:  # noqa: BLE001
+            warns.append(f"dropout check failed: {e}")
         if qc.face_check:
             res = face_check(final, ctx.root / qc.face_model, qc.face_sample_fps, qc.face_threshold, reel.width, reel.height)
             checks["faces"] = res

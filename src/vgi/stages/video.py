@@ -30,7 +30,9 @@ def shot_prompt(ctx: RunContext, sh, extra_negative: str = "") -> tuple[str, str
     if sh.motion_prompt:
         parts.append(f"Camera: {sh.motion_prompt.rstrip('. ')}")
     if vc.sound_in_prompt and sh.sound_prompt:
-        parts.append(f"Sound: {sh.sound_prompt.rstrip('. ')}")
+        sound = sh.sound_prompt.rstrip(". ")
+        style = getattr(vc, "sound_style", "")
+        parts.append(f"Sound: {style}: {sound[:1].lower()}{sound[1:]}" if style else f"Sound: {sound}")
     prompt, neg = build_prompt(ctx, ". ".join(parts) + ".", extra_negative)
     if vc.audio_negative:
         neg = f"{neg}, {vc.audio_negative}" if neg else vc.audio_negative

@@ -61,7 +61,7 @@ class ComfyVideoBackend:
             wf = fill_workflow(self._template(name), values)
             prompt_id = client.queue_prompt(wf)
             if self.log:
-                self.log.info("queued", endpoint=client.endpoint, prompt_id=prompt_id, frames=frames, prefix=prefix)
+                self.log.debug("queued", endpoint=client.endpoint, prompt_id=prompt_id, frames=frames, prefix=prefix)
             try:
                 hist = client.wait(prompt_id, self.timeout_s)
             except ComfyError as e:
