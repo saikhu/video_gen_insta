@@ -12,7 +12,14 @@ def test_env_beats_stage_and_topic(project):
 def test_topic_overrides_stage_but_not_env(project):
     cfg = ConfigLoader(project).load("linux_2x3090", "memes")
     assert cfg.stages["music"]["engine"] == "none"                  # env (none) beats topic (ace_step)
-    assert cfg.stages["qa"]["face_check"] is True
+    assert cfg.stages["qa"]["face_check"] is False                  # depiction policy is topic-owned; memes shows characters
+
+
+def test_history_topic_keeps_face_check_on_every_env(project):
+    # The face check enforces docs/POLICY.md for islamic_battles; it must come from the topic, whatever the machine.
+    for env in ("mac_m5max", "linux_2x3090", "linux_4x4090"):
+        cfg = ConfigLoader(project).load(env, "islamic_battles")
+        assert cfg.stages["qa"]["face_check"] is True, env
 
 
 def test_cli_override_and_content_excludes_env(project):

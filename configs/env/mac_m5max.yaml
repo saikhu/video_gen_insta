@@ -28,5 +28,3 @@ stages:
     engine: none
   captions:
     timing_provider: engine
-  qa:
-    face_check: true
