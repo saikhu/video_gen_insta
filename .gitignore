@@ -10,3 +10,4 @@ runtime/
 *.bin
 .pytest_cache/
 .ruff_cache/
+tmp/

@@ -45,7 +45,7 @@ platform policy constraints and the cost/revenue verdict live in `docs/` and the
 | Narration (Kokoro-82M, lexicon IPA, engine word timings) | **verified** |
 | Captions (ASS karaoke, honorific → ﷺ merge, safe zones) | **verified** |
 | Assembly (xfade, two-pass loudnorm −14 LUFS, faststart) and QA (spec, YuNet faces, loudness) | **verified** |
-| Motion video (LTX-2.5 on the Linux box via ComfyUI) | farm installed on a 4×4090 box, models pulled, four instances running, workflow templates committed; **first clip benchmark pending** |
+| Motion video (LTX-2.5 on the Linux box via ComfyUI) | **verified** on a 4×4090 box: full 8-scene reel rendered in parallel (~8.5 min video stage), 1088×1920 25 fps clips with LTX's native audio, QA passed |
 | Memes track end to end, ACE-Step music, Fish Drama 3 voice | v1.5 |
 | Instagram API publishing (`is_ai_generated=true`, R2 hosting) | v2 |
 
@@ -155,9 +155,10 @@ FLUX.1/2 dev (non-commercial), F5-TTS / Higgs / VibeVoice (research-only), MMAud
 ## Cost
 
 Local generation ≈ **$0.30-0.40 per reel** (≈ $0.20 Claude + a few cents of electricity) versus
-$3-48 per reel for cloud video APIs. Time on the Mac today: ~18 min for 24 keyframes + ~2 min for
-narration, captions and assembly. On the 3090s the plan budgets ~40-50 min per reel including
-twelve LTX-2.5 clips. Realistic revenue for a new account is near zero for 3-6 months; see the plan
+$3-48 per reel for cloud video APIs. Measured on the 4×4090 box: ~2 min for 24 keyframes, ~8.5 min for
+eight LTX-2.5 clips rendered four at a time (one 8 s clip ≈ 4.5 min on one card), ~2 min for narration,
+captions and assembly → **~13 min per reel**, ≈ 0.4 kWh. On the Mac alone: ~18 min of keyframes plus a
+Ken Burns reel (no motion model). Realistic revenue for a new account is near zero for 3-6 months; see the plan
 file for the full review.
 
 ## Policy baked in

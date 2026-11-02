@@ -26,7 +26,9 @@ stages:
     model: ltx25
     workflow_i2v: video_ltx25_i2v
     workflow_flf2v: video_ltx25_flf2v
-    # measured seconds per 5 s clip: (fill in after the first benchmark, docs/SETUP_LINUX.md step 4)
+    # measured 2026-11-02 (LTX-2.5 distilled int8, two-pass 544x960 -> 1088x1920, 25 fps):
+    #   209 frames (8.4 s): 271 s alone on one 4090; 218-283 s per clip with four clips in parallel (no slowdown)
+    #   257 frames (10.3 s): 346 s.  Full 8-scene stage (7 clips, 4 workers): ~8.5 min.  ~32 s of GPU time per output second.
   tts:
     engine: kokoro
     device: cpu

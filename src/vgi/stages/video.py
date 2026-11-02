@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -123,10 +124,11 @@ class VideoStage(Stage):
             return
         parts: list[Path] = []
         pids: list[str] = []
+        n_parts = math.ceil(secs / max_s)          # equal parts: 10.6 s -> 2 x 5.3 s, never a stub of a few frames
+        chunk = secs / n_parts
         remaining, i, first = secs, 0, keyframe
         while remaining > 0.05:
-            chunk = min(max_s, remaining)
-            part_frames = frames_for(chunk, vc.fps, vc.frame_grid)   # the part is rendered at the 8k+1 grid length
+            part_frames = frames_for(min(chunk, remaining), vc.fps, vc.frame_grid)   # rendered at the 8k+1 grid length
             part_len = part_frames / vc.fps
             part = out.with_name(f"{out.stem}_part{i}.mp4")
             backend.generate(first, part, chunk, seed + i, frames=part_frames,
