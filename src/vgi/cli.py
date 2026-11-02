@@ -272,16 +272,24 @@ def run(job: str, env: str = None, from_: str = typer.Option(None, "--from"), un
         names = ["tts", *names]          # clip lengths come from narration; run tts first automatically
         console.print("[dim]tts has not run yet; running it first[/dim]")
     ctx = make_ctx(root, j, env, dry_run, force or bool(scene), scene, reseed, overrides=set_ or None)
-    if set(names) & set(RENDER_STAGES + POST_STAGES):
-        if j.invalidate_if_plan_changed():
+
+    def review_gate() -> None:
+        changed = j.invalidate_if_plan_changed()
+        if j.is_approved():
+            return
+        if dry_run or auto_approve:
+            j.approve()
+            console.print("[yellow]auto-approved[/yellow]")
+        elif changed:
             raise typer.BadParameter("plan changed after approval; re-approve")
-        if not j.is_approved():
-            if dry_run or auto_approve:
-                j.approve()
-                console.print("[yellow]auto-approved[/yellow]")
-            else:
-                raise typer.BadParameter("plan not approved; run `vgi approve` or pass --auto-approve")
+        else:
+            raise typer.BadParameter("plan not approved; run `vgi approve` or pass --auto-approve")
+
+    gated = False
     for n in names:
+        if not gated and n in RENDER_STAGES + POST_STAGES:
+            review_gate()          # after any plan stages in this slice, so a fresh job can run end to end
+            gated = True
         run_stages(ctx, [n])
     console.print(f"[green]done[/green] state={j.manifest.state}")
 
