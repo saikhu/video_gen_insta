@@ -217,3 +217,11 @@ export carries the AI disclosure in the caption and `ai_generated: true` in `met
 2. Real Claude runs with the corpus; Fish Drama 3 behind the GPU lease; Claude-vision candidate pick.
 3. Memes track end to end with ACE-Step beds; Korean-language track (Qwen3-TTS / ElevenLabs).
 4. v2 publishing: Cloudflare R2 + Instagram API with Instagram Login, Trial Reels, 1-2 posts/day cron.
+
+## Third topic in story development
+
+[Where the Burrows Lead](docs/stories/where-the-burrows-lead/README.md) is a proposed 24-minute
+meerkat fantasy adventure, released as sixteen connected 1–2 minute chapters. The development package
+contains the character bible, world rules, full treatment and chapter continuity plan. It is not yet
+a registered topic or a rendered movie; dialogue and character-consistency support are planned in its
+production handoff.

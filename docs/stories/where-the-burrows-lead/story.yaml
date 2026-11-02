@@ -1,0 +1,739 @@
+schema_version: 1
+document_type: story_development_record
+status: draft_for_creative_review
+title: Where the Burrows Lead
+date: '2026-11-03'
+branch: meerkat-story
+pipeline_topic_registered: false
+rendered_media: false
+language: en
+delivery: English-speaking character dialogue
+target_movie_seconds: 1440
+allowed_movie_seconds:
+- 1200
+- 1800
+allowed_release_seconds:
+- 60
+- 120
+timing_basis: editorial targets; story picture only; not rendered durations
+suggested_master_aspect: '9:16'
+aspect_status: proposal_for_visual_development
+agreed_foundation:
+  species: meerkat / suricate
+  visual_style: soft cinematic 3D animation with realistic fur and expressive faces
+  central_duo:
+  - tavi
+  - sera
+  principal_gender_counts:
+    male: 2
+    female: 2
+  upbringing: unrelated youngsters raised together in a communal settlement
+  personal_magic: false
+  promise: explore beyond the familiar dunes together
+  mystery: ancient protective burrow system disrupted by a blocked outlet
+  ending: hopeful transformation with community and heart of home preserved
+  romance: gentle first love with one brief mutual kiss after safety
+characters:
+- id: tavi
+  name: Tavi
+  gender: male
+  age: 17
+  role: central_duo
+  age_status: agreed
+  skill: mechanisms and experiments
+- id: sera
+  name: Sera
+  gender: female
+  age: 18
+  role: central_duo
+  age_status: agreed
+  skill: navigation and improvisation
+- id: nima
+  name: Nima
+  gender: female
+  age: 12
+  role: principal
+  age_status: proposal
+  skill: observation and sequence recognition
+- id: kesh
+  name: Kesh
+  gender: male
+  age: 15
+  role: principal
+  age_status: proposal
+  skill: logistics, routes and load control
+- id: mara
+  name: Mara
+  gender: female
+  age: adult
+  role: supporting
+  age_status: proposal
+  skill: community coordination and surface weather
+locations:
+- court
+- workshop
+- lookout
+- gallery
+- water
+- heart
+- outlet
+- refuge
+props:
+- childhood_map
+- route_cloth
+- clamp
+- model
+- travel_roll
+- rope
+- repair_fragment
+facts:
+  passages_move:
+    established_in: 1
+    meaning: Door sleeves can connect existing passages in different alignments.
+  movement_arc:
+    established_in: 3
+    meaning: Worn arcs move; wall sockets and the maintenance rim are fixed.
+  maintenance_tubes:
+    established_in: 4
+    meaning: Physical tubes carry speech between service points.
+  flow_relief:
+    established_in: 5
+    meaning: The control model can test local flow and route alignments.
+  completion_tick:
+    established_in: 8
+    meaning: A quiet return tick after the three notes confirms the latch.
+  pressure_transfer:
+    established_in: 8
+    meaning: Jamming one part transfers pressure elsewhere.
+  blocked_outlet:
+    established_in: 9
+    meaning: A recent western repair blocked the required pressure outlet.
+  protective_purpose:
+    established_in: 9
+    meaning: The network adapts shelter to seasonal wind; homes now occupy its relief route.
+  kept_map:
+    established_in: 10
+    meaning: Sera kept the map, but the pair have different expectations of departure.
+  safe_new_route:
+    established_in: 11
+    meaning: A tested configuration saves the upper home by reclaiming the lower relief lane.
+  evacuation_complete:
+    established_in: 12
+    meaning: The lower lane is empty and the dry refuge ramp is clear.
+  danger_resolved:
+    established_in: 14
+    meaning: The outlet is open and a safe new configuration has latched.
+  mutual_affection:
+    established_in: 15
+    meaning: Tavi and Sera openly acknowledge their romantic feelings.
+climax:
+  tavi: test and commit a safe route at the distribution chamber
+  nima: confirm the distribution interlock return tick and signal the commit
+  sera: reach and release the western shutter using fixed sockets
+  kesh: control and secure the western shutter brake
+  mara: coordinate and confirm evacuation of the lower relief lane
+  prerequisites:
+  - lower lane empty
+  - dry refuge ramp open
+  - gallery clamp removed
+  - signal tube tested
+  - brake rope padded
+  - new route tested
+chapters:
+- id: ch01
+  number: 1
+  title: A Door Where There Wasn't One
+  target_seconds: 90
+  start_seconds: 0
+  end_seconds: 90
+  movie_interval: 00:00–01:30
+  story_day: 1
+  time_of_day: afternoon
+  cast:
+  - tavi
+  - sera
+  locations:
+  - workshop
+  - gallery
+  dramatic_movement: familiar place becomes a question
+  local_payoff: Both leads confirm a real change; the workshop model matches the gallery marks.
+  exit_question: What else is changing in Sunhollow?
+  target_dialogue_words: 65
+  uses_established_facts: []
+  establishes_facts:
+  - passages_move
+  kiss_count: 0
+  outgoing_prop_states:
+    childhood_map: inside_sera_left_hip_wrap
+    clamp: on_workshop_bench
+    route_cloth: clean_and_packed
+    model: on_workshop_bench
+    travel_roll: with_sera_on_arrival
+  outgoing_character_states:
+    tavi: clean
+    sera: clean
+    kesh: groomed
+- id: ch02
+  number: 2
+  title: Something Packed
+  target_seconds: 85
+  start_seconds: 90
+  end_seconds: 175
+  movie_interval: 01:30–02:55
+  story_day: 1
+  time_of_day: afternoon
+  cast:
+  - tavi
+  - sera
+  - nima
+  - kesh
+  - mara
+  locations:
+  - court
+  dramatic_movement: everyday warmth reveals private tension
+  local_payoff: Private uncertainty is interrupted by the shared loss of water.
+  exit_question: Where has the basin water gone?
+  target_dialogue_words: 100
+  uses_established_facts:
+  - passages_move
+  establishes_facts: []
+  kiss_count: 0
+  outgoing_prop_states:
+    childhood_map: inside_sera_left_hip_wrap
+    clamp: on_workshop_bench
+    route_cloth: clean_and_packed
+    model: on_workshop_bench
+    travel_roll: court_storage_peg
+  outgoing_character_states:
+    tavi: clean
+    sera: clean
+    kesh: groomed
+- id: ch03
+  number: 3
+  title: After the Third Note
+  target_seconds: 90
+  start_seconds: 175
+  end_seconds: 265
+  movie_interval: 02:55–04:25
+  story_day: 1
+  time_of_day: afternoon
+  cast:
+  - tavi
+  - sera
+  - nima
+  - mara
+  locations:
+  - gallery
+  - court
+  dramatic_movement: curiosity becomes a concrete hazard
+  local_payoff: Sera gets clear; the group learns the third note is not a safe entry cue.
+  exit_question: Can they trace the flow without crossing moving stone?
+  target_dialogue_words: 85
+  uses_established_facts:
+  - passages_move
+  establishes_facts:
+  - movement_arc
+  kiss_count: 0
+  outgoing_prop_states:
+    childhood_map: inside_sera_left_hip_wrap
+    clamp: on_workshop_bench
+    route_cloth: clean_and_packed
+    model: on_workshop_bench
+    travel_roll: court_storage_peg
+  outgoing_character_states:
+    tavi: clean
+    sera: dust_scrape_on_left_wrap
+    kesh: groomed
+- id: ch04
+  number: 4
+  title: Bring a Way Back
+  target_seconds: 90
+  start_seconds: 265
+  end_seconds: 355
+  movie_interval: 04:25–05:55
+  story_day: 1
+  time_of_day: afternoon
+  cast:
+  - tavi
+  - sera
+  - nima
+  - kesh
+  - mara
+  locations:
+  - court
+  - gallery
+  dramatic_movement: four individuals choose a shared task
+  local_payoff: The four choose a bounded task and demonstrate an old communication tube.
+  exit_question: What did the old builders make beneath home?
+  target_dialogue_words: 110
+  uses_established_facts:
+  - movement_arc
+  establishes_facts:
+  - maintenance_tubes
+  kiss_count: 0
+  outgoing_prop_states:
+    childhood_map: inside_sera_left_hip_wrap
+    clamp: packed_in_tavi_pouch
+    route_cloth: unfolded_and_marked
+    model: portable_in_tavi_pouch
+    travel_roll: court_storage_peg
+  outgoing_character_states:
+    tavi: clean
+    sera: dust_scrape_on_left_wrap
+    kesh: groomed
+- id: ch05
+  number: 5
+  title: Under the Familiar
+  target_seconds: 95
+  start_seconds: 355
+  end_seconds: 450
+  movie_interval: 05:55–07:30
+  story_day: 1
+  time_of_day: afternoon
+  cast:
+  - tavi
+  - sera
+  - nima
+  - kesh
+  locations:
+  - heart
+  - water
+  dramatic_movement: discovery and intimacy widen the stakes
+  local_payoff: A beautiful discovery yields a plausible but incomplete local theory.
+  exit_question: Will holding one linkage stabilize the flow?
+  target_dialogue_words: 80
+  uses_established_facts:
+  - maintenance_tubes
+  establishes_facts:
+  - flow_relief
+  kiss_count: 0
+  outgoing_prop_states:
+    childhood_map: inside_sera_left_hip_wrap
+    clamp: packed_in_tavi_pouch
+    route_cloth: unfolded_and_marked
+    model: portable_in_tavi_pouch
+    travel_roll: court_storage_peg
+  outgoing_character_states:
+    tavi: clean
+    sera: dust_scrape_on_left_wrap
+    kesh: groomed
+- id: ch06
+  number: 6
+  title: Hold It Still
+  target_seconds: 90
+  start_seconds: 450
+  end_seconds: 540
+  movie_interval: 07:30–09:00
+  story_day: 1
+  time_of_day: afternoon
+  cast:
+  - tavi
+  - sera
+  - nima
+  - kesh
+  locations:
+  - gallery
+  dramatic_movement: a plausible solution fails beyond its boundary
+  local_payoff: The clamp holds one linkage while pressure transfers to its neighbor.
+  exit_question: Where will the transferred pressure go?
+  target_dialogue_words: 90
+  uses_established_facts:
+  - flow_relief
+  - movement_arc
+  establishes_facts: []
+  kiss_count: 0
+  outgoing_prop_states:
+    childhood_map: inside_sera_left_hip_wrap
+    clamp: installed_in_gallery_linkage
+    route_cloth: unfolded_and_marked
+    model: portable_in_tavi_pouch
+    travel_roll: court_storage_peg
+  outgoing_character_states:
+    tavi: clean
+    sera: dust_scrape_on_left_wrap
+    kesh: groomed
+- id: ch07
+  number: 7
+  title: The Other Side
+  target_seconds: 95
+  start_seconds: 540
+  end_seconds: 635
+  movie_interval: 09:00–10:35
+  story_day: 1
+  time_of_day: afternoon
+  cast:
+  - tavi
+  - sera
+  - nima
+  - kesh
+  locations:
+  - water
+  dramatic_movement: the failure separates the group
+  local_payoff: A failed crossing establishes a fixed anchor and a safer approach.
+  exit_question: What sound confirms the crossing has locked?
+  target_dialogue_words: 55
+  uses_established_facts:
+  - passages_move
+  establishes_facts: []
+  kiss_count: 0
+  outgoing_prop_states:
+    childhood_map: inside_sera_left_hip_wrap
+    clamp: installed_in_gallery_linkage
+    route_cloth: unfolded_and_marked
+    model: portable_in_tavi_pouch
+    travel_roll: court_storage_peg
+  outgoing_character_states:
+    tavi: wet_right_side
+    sera: dust_scrape_on_left_wrap
+    kesh: disordered_fur
+- id: ch08
+  number: 8
+  title: The Small Sound
+  target_seconds: 90
+  start_seconds: 635
+  end_seconds: 725
+  movie_interval: 10:35–12:05
+  story_day: 1
+  time_of_day: afternoon
+  cast:
+  - tavi
+  - sera
+  - nima
+  - kesh
+  locations:
+  - water
+  dramatic_movement: cooperation reveals the first reliable rule
+  local_payoff: The group reunites and recognizes a protective sequence.
+  exit_question: What is preventing the protective sequence?
+  target_dialogue_words: 100
+  uses_established_facts:
+  - movement_arc
+  establishes_facts:
+  - completion_tick
+  - pressure_transfer
+  kiss_count: 0
+  outgoing_prop_states:
+    childhood_map: inside_sera_left_hip_wrap
+    clamp: installed_in_gallery_linkage
+    route_cloth: unfolded_and_marked
+    model: portable_in_tavi_pouch
+    travel_roll: court_storage_peg
+  outgoing_character_states:
+    tavi: wet_right_side
+    sera: dust_scrape_on_left_wrap
+    kesh: disordered_fur
+- id: ch09
+  number: 9
+  title: The Closed Outlet
+  target_seconds: 85
+  start_seconds: 725
+  end_seconds: 810
+  movie_interval: 12:05–13:30
+  story_day: 1
+  time_of_day: afternoon
+  cast:
+  - tavi
+  - sera
+  - nima
+  - kesh
+  - mara
+  locations:
+  - outlet
+  - heart
+  dramatic_movement: the cause becomes understandable
+  local_payoff: Repair evidence and Mara's memory explain why the outlet is blocked.
+  exit_question: Can they make a safe arrangement before the relief marker advances?
+  target_dialogue_words: 100
+  uses_established_facts:
+  - flow_relief
+  - pressure_transfer
+  establishes_facts:
+  - blocked_outlet
+  - protective_purpose
+  kiss_count: 0
+  outgoing_prop_states:
+    childhood_map: inside_sera_left_hip_wrap
+    clamp: installed_in_gallery_linkage
+    route_cloth: unfolded_and_marked
+    model: portable_in_tavi_pouch
+    travel_roll: court_storage_peg
+  outgoing_character_states:
+    tavi: wet_right_side
+    sera: dust_scrape_on_left_wrap
+    kesh: disordered_fur
+- id: ch10
+  number: 10
+  title: You Kept It
+  target_seconds: 90
+  start_seconds: 810
+  end_seconds: 900
+  movie_interval: 13:30–15:00
+  story_day: 1
+  time_of_day: afternoon
+  cast:
+  - tavi
+  - sera
+  - nima
+  - kesh
+  locations:
+  - heart
+  dramatic_movement: an old object opens an overdue conversation
+  local_payoff: The map makes their conflicting assumptions speakable.
+  exit_question: Can they accept a changed arrangement for home and their own plans?
+  target_dialogue_words: 135
+  uses_established_facts:
+  - blocked_outlet
+  establishes_facts:
+  - kept_map
+  kiss_count: 0
+  outgoing_prop_states:
+    childhood_map: inside_sera_left_hip_wrap
+    clamp: installed_in_gallery_linkage
+    route_cloth: unfolded_and_marked
+    model: portable_in_tavi_pouch
+    travel_roll: court_storage_peg
+  outgoing_character_states:
+    tavi: wet_right_side
+    sera: dust_scrape_on_left_wrap
+    kesh: disordered_fur
+- id: ch11
+  number: 11
+  title: A Home With Another Shape
+  target_seconds: 90
+  start_seconds: 900
+  end_seconds: 990
+  movie_interval: 15:00–16:30
+  story_day: 1
+  time_of_day: afternoon
+  cast:
+  - tavi
+  - sera
+  - nima
+  - kesh
+  - mara
+  locations:
+  - heart
+  - refuge
+  dramatic_movement: the group accepts a meaningful cost
+  local_payoff: They choose a tested new arrangement and accept evacuation as its cost.
+  exit_question: Can evacuation and the linked release be prepared in time?
+  target_dialogue_words: 110
+  uses_established_facts:
+  - flow_relief
+  - protective_purpose
+  - pressure_transfer
+  establishes_facts:
+  - safe_new_route
+  kiss_count: 0
+  outgoing_prop_states:
+    childhood_map: inside_sera_left_hip_wrap
+    clamp: installed_in_gallery_linkage
+    route_cloth: unfolded_and_marked
+    model: portable_in_tavi_pouch
+    travel_roll: court_storage_peg
+  outgoing_character_states:
+    tavi: wet_right_side
+    sera: dust_scrape_on_left_wrap
+    kesh: disordered_fur
+- id: ch12
+  number: 12
+  title: What We Can Carry
+  target_seconds: 95
+  start_seconds: 990
+  end_seconds: 1085
+  movie_interval: 16:30–18:05
+  story_day: 1
+  time_of_day: late_afternoon
+  cast:
+  - tavi
+  - sera
+  - nima
+  - kesh
+  - mara
+  locations:
+  - gallery
+  - heart
+  - outlet
+  - refuge
+  dramatic_movement: each character prepares a necessary contribution
+  local_payoff: All prerequisites are prepared; the four take their two working stations.
+  exit_question: Can Sera reach the high release safely?
+  target_dialogue_words: 70
+  uses_established_facts:
+  - safe_new_route
+  - completion_tick
+  - maintenance_tubes
+  - pressure_transfer
+  establishes_facts:
+  - evacuation_complete
+  kiss_count: 0
+  outgoing_prop_states:
+    childhood_map: inside_sera_left_hip_wrap
+    clamp: removed_and_repacked_in_tavi_pouch
+    route_cloth: torn_brake_anchor_pad
+    model: portable_in_tavi_pouch
+    travel_roll: court_storage_peg
+  outgoing_character_states:
+    tavi: wet_right_side
+    sera: dust_scrape_on_left_wrap
+    kesh: disordered_fur
+- id: ch13
+  number: 13
+  title: Ask for Another Way
+  target_seconds: 85
+  start_seconds: 1085
+  end_seconds: 1170
+  movie_interval: 18:05–19:30
+  story_day: 1
+  time_of_day: late_afternoon
+  cast:
+  - tavi
+  - sera
+  - nima
+  - kesh
+  locations:
+  - outlet
+  - heart
+  dramatic_movement: Sera changes her approach under pressure
+  local_payoff: Sera abandons the shortcut, reaches the release and asks for timing.
+  exit_question: When has the distribution interlock actually completed?
+  target_dialogue_words: 65
+  uses_established_facts:
+  - movement_arc
+  - maintenance_tubes
+  - evacuation_complete
+  - safe_new_route
+  establishes_facts: []
+  kiss_count: 0
+  outgoing_prop_states:
+    childhood_map: inside_sera_left_hip_wrap
+    clamp: removed_and_repacked_in_tavi_pouch
+    route_cloth: torn_brake_anchor_pad
+    model: portable_in_tavi_pouch
+    travel_roll: court_storage_peg
+  outgoing_character_states:
+    tavi: wet_right_side
+    sera: dust_scrape_on_left_wrap
+    kesh: disordered_fur
+- id: ch14
+  number: 14
+  title: Wait for the Tick
+  target_seconds: 100
+  start_seconds: 1170
+  end_seconds: 1270
+  movie_interval: 19:30–21:10
+  story_day: 1
+  time_of_day: late_afternoon
+  cast:
+  - tavi
+  - sera
+  - nima
+  - kesh
+  - mara
+  locations:
+  - outlet
+  - heart
+  - water
+  - court
+  dramatic_movement: four contributions complete the solution
+  local_payoff: The shutter opens, the interlock ticks and the safe configuration restores water.
+  exit_question: What can they now say after the danger?
+  target_dialogue_words: 55
+  uses_established_facts:
+  - completion_tick
+  - safe_new_route
+  - evacuation_complete
+  - maintenance_tubes
+  - blocked_outlet
+  establishes_facts:
+  - danger_resolved
+  kiss_count: 0
+  outgoing_prop_states:
+    childhood_map: inside_sera_left_hip_wrap
+    clamp: removed_and_repacked_in_tavi_pouch
+    route_cloth: torn_brake_anchor_pad
+    model: portable_in_tavi_pouch
+    travel_roll: court_storage_peg
+  outgoing_character_states:
+    tavi: wet_right_side
+    sera: dust_scrape_on_left_wrap
+    kesh: disordered_fur
+- id: ch15
+  number: 15
+  title: What We Meant
+  target_seconds: 90
+  start_seconds: 1270
+  end_seconds: 1360
+  movie_interval: 21:10–22:40
+  story_day: 1
+  time_of_day: late_afternoon
+  cast:
+  - tavi
+  - sera
+  - nima
+  - kesh
+  - mara
+  locations:
+  - court
+  - refuge
+  dramatic_movement: safety permits honesty and romance
+  local_payoff: The pair choose a first shared journey, confess affection and briefly kiss.
+  exit_question: How will their changed choices look the next morning?
+  target_dialogue_words: 125
+  uses_established_facts:
+  - danger_resolved
+  - kept_map
+  establishes_facts:
+  - mutual_affection
+  kiss_count: 1
+  outgoing_prop_states:
+    childhood_map: inside_sera_left_hip_wrap
+    clamp: removed_and_repacked_in_tavi_pouch
+    route_cloth: retrieved_torn_after_brake_secured
+    model: portable_in_tavi_pouch
+    travel_roll: court_storage_peg
+  outgoing_character_states:
+    tavi: partly_dry_dusty_right_side
+    sera: dust_scrape_on_left_wrap
+    kesh: disordered_fur
+- id: ch16
+  number: 16
+  title: A Way Out, a Way Back
+  target_seconds: 80
+  start_seconds: 1360
+  end_seconds: 1440
+  movie_interval: 22:40–24:00
+  story_day: 2
+  time_of_day: next_morning
+  cast:
+  - tavi
+  - sera
+  - nima
+  - kesh
+  - mara
+  locations:
+  - court
+  - refuge
+  - heart
+  - lookout
+  - outlet
+  dramatic_movement: the changed home and shared future become visible
+  local_payoff: The changed home functions; the four begin a bounded outward survey.
+  exit_question: 'Resolved: the first journey has a route and a return plan.'
+  target_dialogue_words: 80
+  uses_established_facts:
+  - danger_resolved
+  - mutual_affection
+  - completion_tick
+  establishes_facts: []
+  kiss_count: 0
+  outgoing_prop_states:
+    childhood_map: amended_at_lookout_then_carried_by_sera
+    clamp: removed_and_repacked_in_tavi_pouch
+    route_cloth: patched_corner_in_use
+    model: portable_in_tavi_pouch
+    travel_roll: packed_for_first_survey
+  outgoing_character_states:
+    tavi: groomed_next_morning
+    sera: groomed_next_morning_fixed_wrap_retained
+    kesh: groomed_next_morning
