@@ -16,6 +16,15 @@ def _corpus_fingerprint(root: Path, corpus_dir: str) -> list[tuple[str, int, int
     return [(p.name, int(p.stat().st_mtime), p.stat().st_size) for p in sorted(d.glob("*")) if p.is_file()]
 
 
+def llm_identity(ctx: RunContext, stage: str) -> list[str]:
+    """What determines the LLM output: backend + model (part of the stage cache key)."""
+    backend = "stub" if ctx.dry_run else getattr(ctx.stage_cfg(stage), "backend", "stub")
+    llm = ctx.cfg.llm or {}
+    model = {"local": llm.get("local", {}).get("model", ""), "ollama": llm.get("local", {}).get("model", ""),
+             "claude": llm.get("claude", {}).get("model", "")}.get(backend, "")
+    return [backend, model]
+
+
 class ResearchStage(Stage):
     name = "research"
 
@@ -24,7 +33,7 @@ class ResearchStage(Stage):
         t = ctx.cfg.topic
         d.update(subject=ctx.job.manifest.subject, plugin=t.plugin,
                  corpus=_corpus_fingerprint(ctx.root, (t.model_extra or {}).get("corpus_dir", "")),
-                 llm="stub" if (ctx.dry_run or not ctx.secrets.has_claude()) else ctx.stage_cfg("research").backend)
+                 llm=llm_identity(ctx, "research"))
         return d
 
     def run(self, ctx: RunContext) -> StageResult:

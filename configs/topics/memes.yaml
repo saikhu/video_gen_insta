@@ -35,6 +35,13 @@ caption_footer: "Original AI-made characters. Visuals and voice are AI-generated
 hashtags: ["#memes", "#funny", "#comedy", "#aiart", "#animals", "#reels", "#humor"]
 
 stages:
+  script:
+    beats_min: 4
+    beats_max: 8
+    target_seconds_min: 18
+    target_seconds_max: 40
+  tts:
+    speed: 1.05
   music:
     engine: ace_step
     prompt: "light playful ukulele, upbeat, no vocals"

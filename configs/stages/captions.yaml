@@ -1,15 +1,24 @@
-# Stage: captions. words.json -> ASS karaoke subtitles (burned in by assemble).
+# Stage: captions. Word-timed karaoke captions + on-screen title cards (ASS, burned in by assemble).
 timing_provider: engine         # engine | whisperx
 words_per_group: 3
+uppercase: true                 # punchier short-form look
+title_seconds: 2.6              # how long a beat's on_screen_text stays up
 style:
-  font: "Arial Black"
-  size: 68
+  font: "Arial Black"           # Linux env profiles switch to Liberation Sans
+  size: 70
   primary_colour: "&H00FFFFFF"  # ASS BGR: white
   secondary_colour: "&H0000D7FF" # karaoke highlight: gold (BGR of #FFD700)
   outline_colour: "&H00000000"
   back_colour: "&H80000000"
-  outline: 4
+  outline: 5
   shadow: 2
   bold: -1
   alignment: 2                  # bottom-center; MarginV keeps it above the safe zone
+title_style:
+  size: 88
+  spacing: 6
+  outline: 5
+  shadow: 3
+  offset_px: 60                 # below the top safe zone
+  fade_ms: 250
 pop_in_ms: 80

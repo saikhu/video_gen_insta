@@ -39,6 +39,7 @@ What the script does, in order (each step is skipped when already done):
 | 3 | clones ComfyUI-GGUF, KJNodes, Frame-Interpolation; writes `extra_model_paths.yaml` pointing at the shared models dir | `runtime/comfy/ComfyUI/custom_nodes`, `models/` |
 | 4 | `uv sync` for vgi (`dev`, `tts`, `qa` extras), downloads the YuNet face model | repo root (`.venv/`, `models/`) |
 | 5 | `vgi models pull` from `comfy/models.yaml` (~97 GB: LTX-2.5 39.7, Wan 2.2 37.8, Z-Image 14.6, SeedVR2 4; resumable; add `--include-optional` for FLUX) | `models/<subfolder>` |
+| 5b | local LLM: downloads Ollama (`.tar.zst`) into `runtime/ollama`, models into `models/ollama`, service `vgi-ollama` on 11434, `vgi llm pull` (`qwen3.8:27b`, 17.7 GB). Skip with `--no-llm` | `runtime/ollama`, systemd |
 | 6 | installs `comfy@.service` and starts one instance per GPU: `comfy@N` on port 8188+N (`scripts/comfy_instance.sh`) | systemd |
 
 Flags: `--no-systemd` (then `bash scripts/comfy_tmux.sh` starts both instances in tmux), `--skip-models`.
@@ -63,6 +64,15 @@ GPUs, otherwise `linux_2x3090`). The setup script prints the profile it chose on
 remembers the env it was created with, and the env is the only part of the configuration that is **not**
 frozen into the job, so the same job folder can be rendered under another profile. To add a machine, copy
 one of these files, rename it, and edit the `comfy.endpoints` and `stages:` overrides.
+
+Already ran the script before the local LLM existed? Add just that part:
+
+```bash
+git pull && bash scripts/setup_linux.sh --skip-models && uv run vgi llm pull && uv run vgi llm test
+```
+
+The writer and ComfyUI share the GPUs: before each LLM call the pipeline asks every ComfyUI instance to unload
+its models (`POST /free`), and Ollama unloads the LLM right after (`keep_alive: 0`), so they never compete.
 
 ## 2. Verify
 

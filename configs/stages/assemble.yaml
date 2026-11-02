@@ -1,8 +1,20 @@
-# Stage: assemble. Segments -> xfade concat -> captions -> two-pass loudnorm -> final.mp4
-transition: fade
+# Stage: assemble. Shots joined by per-beat transitions; one continuous narration track; the clips' own sound
+# ducked under the voice (it swells in pauses); film grade; captions; two-pass loudnorm -> final.mp4
 crf: 18
 preset: slow
 pix_fmt: yuv420p
 loudnorm_two_pass: true
 lra: 11
+diegetic_gain_db: -6            # clip sound level before ducking
+duck_threshold: 0.03            # side-chain: how soon narration pushes the clip sound down
+duck_ratio: 6
+duck_release_ms: 450            # how fast the sound swells back in a pause
+grade:
+  enabled: true
+  contrast: 1.07
+  saturation: 1.06
+  brightness: 0.0
+  vignette: true
+  vignette_angle: PI/5
+  grain: 0                      # 3-6 adds film grain (raises bitrate)
 font_dirs: ["/System/Library/Fonts", "/System/Library/Fonts/Supplemental", "/usr/share/fonts"]

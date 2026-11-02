@@ -7,6 +7,7 @@
 #   bash scripts/setup_linux.sh --inspect                          # only report GPUs/driver/RAM/disk
 #   bash scripts/setup_linux.sh --no-systemd                       # skip services (use scripts/comfy_tmux.sh)
 #   bash scripts/setup_linux.sh --skip-models                      # skip the ~97 GB download
+#   bash scripts/setup_linux.sh --no-llm                           # skip the local LLM (Ollama) step
 #
 # Layout (all gitignored, inside the repo): runtime/comfy/ComfyUI, models/<subfolder>, outputs/jobs.
 # Env overrides: COMFY_ROOT, MODELS_DIR, VGI_ENV (profile; auto: 4 GPUs → linux_4x4090, else linux_2x3090), HF_TOKEN
@@ -16,9 +17,9 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Everything lives inside the repo tree (all gitignored): runtime/comfy (ComfyUI + venv), models/, outputs/.
 COMFY_ROOT="${COMFY_ROOT:-$REPO_DIR/runtime/comfy}"
 MODELS_DIR="${MODELS_DIR:-$REPO_DIR/models}"
-INSPECT_ONLY=0; USE_SYSTEMD=1; SKIP_MODELS=0
+INSPECT_ONLY=0; USE_SYSTEMD=1; SKIP_MODELS=0; WITH_LLM=1
 for a in "$@"; do case "$a" in
-  --inspect) INSPECT_ONLY=1;; --no-systemd) USE_SYSTEMD=0;; --skip-models) SKIP_MODELS=1;;
+  --inspect) INSPECT_ONLY=1;; --no-systemd) USE_SYSTEMD=0;; --skip-models) SKIP_MODELS=1;; --no-llm) WITH_LLM=0;;
   *) echo "unknown flag $a"; exit 2;; esac; done
 
 say()  { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
@@ -48,7 +49,7 @@ command -v ffmpeg >/dev/null && { ffmpeg -hide_banner -filters 2>/dev/null | gre
 say "System packages"
 if command -v apt-get >/dev/null; then
   sudo apt-get update -qq
-  sudo apt-get install -y -qq git ffmpeg espeak-ng build-essential python3-dev tmux curl fonts-liberation >/dev/null
+  sudo apt-get install -y -qq git ffmpeg espeak-ng build-essential python3-dev tmux curl fonts-liberation zstd >/dev/null
   ok "apt packages present"
 else
   warn "no apt-get: install git ffmpeg espeak-ng build-essential tmux yourself"
@@ -112,6 +113,28 @@ if [ "$SKIP_MODELS" = 0 ]; then
   MODELS_DIR="$MODELS_DIR" uv run vgi models pull --env "$VGI_ENV"
 else
   warn "skipping model download (--skip-models)"
+fi
+
+# ---------------------------------------------------------------- 5b. local LLM (Ollama, inside the repo)
+if [ "$WITH_LLM" = 1 ]; then
+  say "Local LLM: Ollama in runtime/ollama, models in models/ollama"
+  OLLAMA_DIR="$REPO_DIR/runtime/ollama"
+  if [ ! -x "$OLLAMA_DIR/bin/ollama" ]; then
+    mkdir -p "$OLLAMA_DIR"
+    # 2026-11: the Linux build ships as .tar.zst (the old .tgz URL returns 404)
+    curl -fL --progress-bar https://ollama.com/download/ollama-linux-amd64.tar.zst | tar --zstd -x -C "$OLLAMA_DIR"
+  fi
+  ok "ollama $("$OLLAMA_DIR/bin/ollama" --version 2>/dev/null | tail -1)"
+  if [ "$USE_SYSTEMD" = 1 ]; then
+    sed -e "s|__REPO__|$REPO_DIR|g" -e "s|__USER__|$USER|" "$REPO_DIR/comfy/systemd/vgi-ollama.service" | sudo tee /etc/systemd/system/vgi-ollama.service >/dev/null
+    sudo systemctl daemon-reload && sudo systemctl enable vgi-ollama >/dev/null 2>&1 && sudo systemctl restart vgi-ollama
+  else
+    tmux kill-session -t vgi-ollama 2>/dev/null || true
+    tmux new-session -d -s vgi-ollama "bash $REPO_DIR/scripts/ollama_serve.sh 2>&1 | tee -a $REPO_DIR/runtime/ollama.log"
+  fi
+  for i in $(seq 1 20); do curl -sf http://127.0.0.1:11434/api/version >/dev/null && break; sleep 1; done
+  curl -sf http://127.0.0.1:11434/api/version >/dev/null && ok "Ollama listening on 11434" || warn "Ollama not up: journalctl -u vgi-ollama -f"
+  [ "$SKIP_MODELS" = 0 ] && uv run vgi llm pull || warn "skipping LLM model pull (--skip-models): later run  uv run vgi llm pull"
 fi
 
 # ---------------------------------------------------------------- 6. services

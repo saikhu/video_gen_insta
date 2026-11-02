@@ -9,7 +9,7 @@ reel:                        # Instagram Reels spec (verified 2026-11-02 against
   height: 1920
   fps: 25                    # LTX-2.5 native; Instagram accepts 23-60, no fps conversion
   min_seconds: 45
-  max_seconds: 75
+  max_seconds: 95
   loudness_lufs: -14
   true_peak_dbtp: -1
   video_codec: libx264

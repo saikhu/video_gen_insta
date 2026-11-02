@@ -1,0 +1,15 @@
+# Installed by scripts/setup_linux.sh as /etc/systemd/system/vgi-ollama.service (paths and user substituted).
+# Local LLM for research/script (configs/llm.yaml). Models live in <repo>/models/ollama.
+[Unit]
+Description=vgi local LLM (Ollama)
+After=network.target
+
+[Service]
+User=__USER__
+WorkingDirectory=__REPO__
+ExecStart=/usr/bin/env bash __REPO__/scripts/ollama_serve.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

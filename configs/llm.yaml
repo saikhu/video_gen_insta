@@ -1,0 +1,18 @@
+# Which language model writes the research fact sheet and the script.
+# Stage files (configs/stages/research.yaml, script.yaml) choose `backend: local | claude | stub`.
+# Env profiles can override anything here under an `llm:` block (e.g. a smaller model on the Mac).
+
+local:
+  provider: ollama
+  host: http://127.0.0.1:11434
+  model: qwen3.8:27b          # 17.7 GB, verified in the Ollama registry 2026-11-02; alternative: gemma4:31b (20.4 GB)
+  num_ctx: 32768              # context window; the research pass sends ~10-20k tokens of sources
+  keep_alive: "0"             # unload right after each call so ComfyUI gets the VRAM back
+  think: null                 # null = model default; false disables reasoning on thinking models (qwen3.x)
+  timeout_seconds: 1800
+  research_max_chunks: 14     # fewer sources than Claude gets (context and speed)
+  free_comfy_first: true      # POST /free to every ComfyUI endpoint before a local LLM call (GPU hand-off)
+
+claude:
+  model: claude-opus-5-5      # used when a stage says backend: claude (needs ANTHROPIC_API_KEY)
+  effort: high

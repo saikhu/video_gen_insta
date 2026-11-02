@@ -1,8 +1,8 @@
-# Stage: keyframes (Part A). One image per scene, n candidates, human picks in the preview.
+# Stage: keyframes (Part A). One image per SHOT, n candidates each; the human picks in the storyboard.
 backend: stub                   # stub | mflux | comfy   (env profiles override)
 model: z_image_turbo
-n_candidates: 3
-gen_width: 768                  # generation size (9:16); final crop/scale to reel size happens in video/assemble
+n_candidates: 2                 # 2 x ~24 shots = ~48 images per reel
+gen_width: 768                  # generation size (9:16); scaled to reel size later
 gen_height: 1344
 steps: 8                        # Z-Image Turbo: 8; FLUX 3 Klein: 4-8; Qwen-Image: 30-50
 guidance: 2.0

@@ -64,6 +64,10 @@ class QaStage(Stage):
                 fails.append("moov atom is not before mdat (no faststart)")
             if not (reel.min_seconds <= info["duration"] <= reel.max_seconds):
                 warns.append(f"duration {info['duration']:.1f}s outside {reel.min_seconds}-{reel.max_seconds}s")
+            from ..media.ffmpeg import video_duration
+            vd = video_duration(final)
+            if vd < info["duration"] - 0.25:
+                fails.append(f"video track {vd:.2f}s shorter than the reel {info['duration']:.2f}s (frozen tail)")
             if info["pix_fmt"] != "yuv420p":
                 warns.append(f"pix_fmt {info['pix_fmt']} (Instagram expects 4:2:0)")
         try:

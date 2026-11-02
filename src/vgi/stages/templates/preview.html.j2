@@ -1,36 +1,43 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>{{ plan.title }} — storyboard</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ plan.title }} — storyboard</title>
 <style>
-body{font-family:-apple-system,Segoe UI,sans-serif;margin:24px;background:#111;color:#eee}
-h1{margin:0 0 4px}.meta{color:#aaa;margin-bottom:18px}
-.scene{display:grid;grid-template-columns:1fr 2fr;gap:16px;border:1px solid #333;border-radius:10px;padding:14px;margin-bottom:14px;background:#181818}
-.cands{display:flex;gap:8px;flex-wrap:wrap}.cands figure{margin:0;text-align:center}
-.cands img{width:150px;aspect-ratio:9/16;object-fit:cover;border:3px solid #333;border-radius:6px}
-.cands .chosen img{border-color:#f5c518}
-.lbl{font-size:12px;color:#aaa}code{background:#222;padding:2px 6px;border-radius:4px}
-.warn{color:#f5c518}.box{background:#1d1d1d;border:1px solid #333;border-radius:8px;padding:12px;white-space:pre-wrap;font-size:13px}
+body{font-family:-apple-system,Segoe UI,sans-serif;margin:24px;background:#0f0f10;color:#eee;max-width:1200px}
+h1{margin:0 0 4px}.meta{color:#aaa;margin-bottom:18px}.lbl{font-size:12px;color:#9a9a9a}
+.beat{border:1px solid #2c2c2c;border-radius:12px;padding:14px;margin-bottom:16px;background:#161617}
+.beat h3{margin:0 0 6px;font-size:15px}.narr{font-size:17px;line-height:1.45;margin:6px 0 10px}
+.title{display:inline-block;background:#f5c518;color:#111;font-weight:800;letter-spacing:.08em;padding:2px 8px;border-radius:4px;margin-left:6px}
+.shots{display:flex;gap:14px;flex-wrap:wrap}.shot{background:#1d1d1f;border-radius:10px;padding:8px;width:340px}
+.cands{display:flex;gap:6px}.cands figure{margin:0;text-align:center}
+.cands img{width:104px;aspect-ratio:9/16;object-fit:cover;border:3px solid #333;border-radius:6px}
+.cands .chosen img{border-color:#f5c518}code{background:#222;padding:1px 5px;border-radius:4px}
+.warn{color:#f5c518}.box{background:#1a1a1a;border:1px solid #2c2c2c;border-radius:8px;padding:12px;white-space:pre-wrap;font-size:13px}
 </style></head><body>
 <h1>{{ plan.title }}</h1>
-<div class="meta">job <code>{{ job.job_id }}</code> · topic {{ job.topic }} · {{ plan.scenes|length }} scenes · ~{{ total_seconds }} s · state {{ job.state }}</div>
+<div class="meta">job <code>{{ job.job_id }}</code> · {{ plan.scenes|length }} beats · {{ plan.shot_ids()|length }} shots · ~{{ total_seconds }} s · state {{ job.state }}</div>
 <p><b>Hook:</b> {{ plan.hook }}</p>
 {% if stage_notes %}<p class="warn">Validator warnings: {{ stage_notes|join(" · ") }}</p>{% endif %}
-<p class="lbl">Pick a keyframe per scene with <code>vgi pick {{ job.job_id }} &lt;scene&gt; &lt;candidate&gt;</code>, edit <code>02_script/scene_plan.json</code> if needed, then <code>vgi approve {{ job.job_id }}</code>.</p>
+<p class="lbl">Pick a candidate: <code>vgi pick {{ job.job_id }} &lt;beat.shot&gt; &lt;candidate&gt;</code> (e.g. <code>3.2 1</code>), edit <code>02_script/scene_plan.json</code> if needed, then <code>vgi approve {{ job.job_id }}</code>.</p>
 {% for s in plan.scenes %}
-<div class="scene">
-  <div>
-    <div class="lbl">scene {{ s.id }} · {{ s.shot_type }} · {{ s.target_seconds }} s</div>
-    <div class="cands">
-    {% for p in kf_index.get(s.id|string, []) %}
-      <figure class="{{ 'chosen' if loop.index0 == s.keyframe_choice else '' }}"><img src="../{{ p }}" alt="c{{ loop.index0 }}"><figcaption class="lbl">c{{ loop.index0 }}</figcaption></figure>
-    {% endfor %}
+<div class="beat">
+  <h3>Beat {{ s.id }} <span class="lbl">· into: {{ s.transition }}{% if s.pause_after %} · pause {{ s.pause_after }} s{% endif %}</span>{% if s.on_screen_text %}<span class="title">{{ s.on_screen_text }}</span>{% endif %}</h3>
+  <div class="narr">{{ s.narration_text }}</div>
+  <div class="shots">
+  {% for sh in s.all_shots() %}{% set sid = s.shot_id(loop.index0) %}
+    <div class="shot">
+      <div class="lbl"><b>{{ sid }}</b> · {{ sh.shot_type }}</div>
+      <div class="cands">
+      {% for p in kf_index.get(sid, []) %}
+        <figure class="{{ 'chosen' if loop.index0 == sh.keyframe_choice else '' }}"><img src="../{{ p }}" alt="c{{ loop.index0 }}"><figcaption class="lbl">c{{ loop.index0 }}</figcaption></figure>
+      {% endfor %}
+      </div>
+      <p class="lbl"><b>Visual:</b> {{ sh.visual_prompt }}<br><b>Camera:</b> {{ sh.motion_prompt }}{% if sh.sound_prompt %}<br><b>Sound:</b> {{ sh.sound_prompt }}{% endif %}</p>
     </div>
-  </div>
-  <div>
-    <p><b>Narration:</b> {{ s.narration_text }}</p>
-    <p class="lbl"><b>Visual:</b> {{ s.visual_prompt }}<br><b>Motion:</b> {{ s.motion_prompt }}{% if s.on_screen_text %}<br><b>On-screen:</b> {{ s.on_screen_text }}{% endif %}</p>
+  {% endfor %}
   </div>
 </div>
 {% endfor %}
 <h2>Caption</h2><div class="box">{{ caption }}</div>
+{% if treatment %}<h2>Treatment</h2><div class="box">{{ treatment }}</div>{% endif %}
 {% if fact_md %}<h2>Fact sheet</h2><div class="box">{{ fact_md }}</div>{% endif %}
 </body></html>

@@ -62,6 +62,8 @@ caption_footer: "Sources: {sources}. Visuals are AI-generated reconstructions, n
 hashtags: ["#IslamicHistory", "#Seerah", "#History", "#Battle", "#Islam", "#Muslim", "#Documentary", "#Reels"]
 
 stages:
+  video:
+    audio_negative: "music, singing, chanting, drums, instruments, choir"
   music:
     engine: none
   qa:

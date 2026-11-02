@@ -51,8 +51,12 @@ def _ts(t: float) -> str:
 
 def build_ass(scene_words: list[tuple[float, list[WordTiming]]], *, width: int, height: int, style: dict,
               bottom_margin_px: int, side_margin_px: int, words_per_group: int, pop_in_ms: int,
-              honorifics: list[dict] | None = None, min_hold: float = 0.35) -> str:
-    """scene_words: [(absolute_offset_seconds, words)] -> ASS document string."""
+              honorifics: list[dict] | None = None, min_hold: float = 0.35, uppercase: bool = False,
+              titles: list[tuple[float, float, str]] | None = None, title_style: dict | None = None,
+              top_margin_px: int = 250) -> str:
+    """scene_words: [(absolute_offset_seconds, words)] -> ASS document string. `titles` are on-screen title cards
+    [(start, end, text)] drawn top-center below the top safe zone."""
+    ts = title_style or {}
     header = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {width}
@@ -63,6 +67,7 @@ ScaledBorderAndShadow: yes
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Cap,{style.get('font', 'Arial Black')},{style.get('size', 68)},{style.get('primary_colour', '&H00FFFFFF')},{style.get('secondary_colour', '&H0000D7FF')},{style.get('outline_colour', '&H00000000')},{style.get('back_colour', '&H80000000')},{style.get('bold', -1)},0,0,0,100,100,0,0,1,{style.get('outline', 4)},{style.get('shadow', 2)},{style.get('alignment', 2)},{side_margin_px},{side_margin_px},{bottom_margin_px},1
+Style: Title,{ts.get('font', style.get('font', 'Arial Black'))},{ts.get('size', 84)},{ts.get('primary_colour', '&H00FFFFFF')},&H000000FF,{ts.get('outline_colour', '&H00000000')},&H64000000,-1,0,0,0,100,100,{ts.get('spacing', 6)},0,1,{ts.get('outline', 5)},{ts.get('shadow', 3)},8,{side_margin_px},{side_margin_px},{top_margin_px + ts.get('offset_px', 40)},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -78,7 +83,11 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             for j, w in enumerate(group):
                 nxt = group[j + 1].start if j + 1 < len(group) else group[-1].end
                 dur_cs = max(1, int(round((nxt - w.start) * 100)))
-                parts.append(f"{{\\kf{dur_cs}}}{w.word}")
+                parts.append(f"{{\\kf{dur_cs}}}{w.word.upper() if uppercase else w.word}")
             text = f"{{\\fad({pop_in_ms},0)}}" + " ".join(parts)
             lines.append(f"Dialogue: 0,{_ts(start)},{_ts(end)},Cap,,0,0,0,,{text}")
+    fade = int((title_style or {}).get("fade_ms", 250))
+    for start, end, text in titles or []:
+        if text.strip():
+            lines.append(f"Dialogue: 1,{_ts(start)},{_ts(end)},Title,,0,0,0,,{{\\fad({fade},{fade})}}{text.strip().upper()}")
     return header + "\n".join(lines) + "\n"

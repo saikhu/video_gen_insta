@@ -1,4 +1,5 @@
-"""ComfyUI image backend (FLUX 3 Klein / Qwen-Image via API-format workflow templates)."""
+"""ComfyUI image backend (Z-Image Turbo / FLUX 3 Klein via API-format workflow templates). Thread-safe: each call
+holds one ComfyUI instance from the pool, so the keyframes stage can render on every GPU at once."""
 from __future__ import annotations
 
 import json
@@ -23,11 +24,14 @@ class ComfyImageBackend:
         tpl: dict[str, Any] = json.loads(self.template_path.read_text(encoding="utf-8"))
         wf = fill_workflow(tpl, {"prompt": prompt, "negative": negative, "width": width, "height": height,
                                  "seed": seed, "steps": steps, "guidance": guidance, "prefix": prefix})
-        client = self.pool.next()
-        pid = client.queue_prompt(wf)
-        hist = client.wait(pid, self.timeout_s)
-        files = [f for f in client.outputs(hist) if f["filename"].lower().endswith((".png", ".jpg", ".webp"))]
-        if not files:
-            raise ComfyError("workflow produced no image")
-        client.download(files[0], out)
-        return out
+        client = self.pool.acquire()
+        try:
+            pid = client.queue_prompt(wf)
+            hist = client.wait(pid, self.timeout_s)
+            files = [f for f in client.outputs(hist) if f["filename"].lower().endswith((".png", ".jpg", ".webp"))]
+            if not files:
+                raise ComfyError("workflow produced no image")
+            client.download(files[0], out)
+            return out
+        finally:
+            self.pool.release(client)

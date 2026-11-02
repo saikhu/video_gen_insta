@@ -28,11 +28,14 @@ class StoryboardStage(Stage):
         env = Environment(loader=FileSystemLoader(str(Path(__file__).parent / "templates")),
                           autoescape=select_autoescape(["html"]))
         tpl = env.get_template(ctx.stage_cfg("storyboard").template)
-        total = sum(s.target_seconds for s in plan.scenes)
+        wps = float(ctx.cfg.topic.narration.get("words_per_second", 2.5))
+        total = sum(len(s.narration_text.split()) / wps + 0.4 + s.pause_after for s in plan.scenes)
         html = tpl.render(job=ctx.job.manifest, plan=plan, research=research, kf_index=kf_index,
                           fact_md=fact_md.read_text(encoding="utf-8") if fact_md.exists() else "",
                           total_seconds=round(total, 1), stage_notes=ctx.job.record("script").notes,
-                          caption=(ctx.job.dir("script") / "caption.txt").read_text(encoding="utf-8"))
+                          caption=(ctx.job.dir("script") / "caption.txt").read_text(encoding="utf-8"),
+                          treatment=(ctx.job.dir("script") / "treatment.md").read_text(encoding="utf-8")
+                          if (ctx.job.dir("script") / "treatment.md").exists() else "")
         out = ctx.job.dir("storyboard") / "preview.html"
         out.write_text(html, encoding="utf-8")
         if ctx.job.manifest.state in ("created", "planned"):

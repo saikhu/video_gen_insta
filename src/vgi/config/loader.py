@@ -75,7 +75,9 @@ class ConfigLoader:
         stages = deep_merge(stages, topic_raw.get("stages", {}))
         stages = deep_merge(stages, env_raw.get("stages", {}))
 
-        tree: dict[str, Any] = {"global": global_raw, "stages": stages, "topic": topic_raw, "env": env_raw}
+        llm_path = self.cfg_dir / "llm.yaml"
+        llm_raw = deep_merge(load_yaml(llm_path) if llm_path.exists() else {}, env_raw.get("llm", {}))
+        tree: dict[str, Any] = {"global": global_raw, "stages": stages, "topic": topic_raw, "env": env_raw, "llm": llm_raw}
         for item in overrides:
             path, value = _parse_override(item)
             _apply_override(tree, path, value)
@@ -101,6 +103,7 @@ class ConfigLoader:
             voice=voice,
             lexicon=lexicon,
             pricing=pricing,
+            llm=tree["llm"],
             overrides=overrides,
         )
 
@@ -112,6 +115,7 @@ class ConfigLoader:
 def config_from_content(content: dict[str, Any], env_raw: dict[str, Any], pricing: dict[str, Any]) -> MergedConfig:
     """Rebuild a MergedConfig from a job's frozen content snapshot plus a (runtime) env."""
     stages = deep_merge(content["stages"], env_raw.get("stages", {}))
+    llm = deep_merge(content.get("llm", {}), env_raw.get("llm", {}))
     return MergedConfig(
         global_=GlobalConfig.model_validate(content["global"]),
         stages=stages,
@@ -121,5 +125,6 @@ def config_from_content(content: dict[str, Any], env_raw: dict[str, Any], pricin
         voice=content.get("voice", {}),
         lexicon=content.get("lexicon", {}),
         pricing=pricing,
+        llm=llm,
         overrides=content.get("overrides", []),
     )

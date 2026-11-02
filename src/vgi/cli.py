@@ -23,8 +23,10 @@ from .core.stage import RunContext
 app = typer.Typer(no_args_is_help=True, add_completion=False, help="Local AI video pipeline for Instagram Reels.")
 corpus_app = typer.Typer(help="Corpus management.")
 models_app = typer.Typer(help="Model files for ComfyUI.")
+llm_app = typer.Typer(help="Local LLM (Ollama) used for research and scripts.")
 app.add_typer(corpus_app, name="corpus")
 app.add_typer(models_app, name="models")
+app.add_typer(llm_app, name="llm")
 
 
 # ---------- helpers ----------
@@ -67,7 +69,9 @@ def make_ctx(root: Path, job: Job, env: str | None, dry_run: bool = False, force
     env = env or job.manifest.env_used or default_env()
     env_raw = load_yaml(root / "configs" / "env" / f"{env}.yaml")
     pricing_p = root / "configs" / "pricing.yaml"
-    content = job.manifest.content_config
+    import copy
+
+    content = copy.deepcopy(job.manifest.content_config)      # overrides apply to this run only, never saved
     if overrides:
         from .config.loader import _apply_override, _parse_override  # noqa: PLC0415
 
@@ -135,21 +139,55 @@ def preview(job: str, open_: bool = typer.Option(True, "--open/--no-open")) -> N
 
 
 @app.command()
-def pick(job: str, scene: int, candidate: int) -> None:
-    """Choose keyframe candidate for a scene (writes keyframe_choice into scene_plan.json)."""
+def pick(job: str, shot: str = typer.Argument(..., help='shot id like "3.2" (beat 3, shot 2); "3" means "3.1"'),
+         candidate: int = typer.Argument(..., help="candidate index shown in the storyboard (c0, c1, ...)")) -> None:
+    """Choose the keyframe candidate for a shot (writes keyframe_choice into scene_plan.json)."""
     root = find_root()
     j = _job(root, job)
     plan_ = json.loads(j.scene_plan_path.read_text(encoding="utf-8"))
+    beat, _, k = shot.partition(".")
+    idx = int(k) - 1 if k else 0
     for s in plan_["scenes"]:
-        if s["id"] == scene:
-            s["keyframe_choice"] = candidate
+        if s["id"] == int(beat):
+            if s.get("shots"):
+                if not 0 <= idx < len(s["shots"]):
+                    raise typer.BadParameter(f"beat {beat} has {len(s['shots'])} shot(s)")
+                s["shots"][idx]["keyframe_choice"] = candidate
+            else:
+                s["keyframe_choice"] = candidate
             break
     else:
-        raise typer.BadParameter(f"scene {scene} not found")
+        raise typer.BadParameter(f"beat {beat} not found")
     j.scene_plan_path.write_text(json.dumps(plan_, indent=2, ensure_ascii=False), encoding="utf-8")
     if j.invalidate_if_plan_changed():
         console.print("[yellow]plan changed after approval → state reset to planned; approve again[/yellow]")
-    console.print(f"scene {scene} → candidate {candidate}")
+    console.print(f"shot {beat}.{idx + 1} → candidate {candidate}")
+
+
+@app.command()
+def tidy(job: str, env: str = None) -> None:
+    """Apply the mechanical script fixes (honorifics, long-beat splits, pacing caps) to scene_plan.json and show
+    what the validators still report. Useful after hand-editing the plan. No LLM call."""
+    from .core.models import ScenePlan
+    from .topics import get_plugin
+
+    root = find_root()
+    j = _job(root, job)
+    ctx = make_ctx(root, j, env)
+    plugin = get_plugin(ctx.cfg.topic.plugin)
+    plan = ScenePlan.model_validate_json(j.scene_plan_path.read_text(encoding="utf-8"))
+    plan, notes = plugin.autofix(ctx, plan)
+    errors, warns = plugin.validate(ctx, plan)
+    j.scene_plan_path.write_text(plan.model_dump_json(indent=2), encoding="utf-8")
+    for n in notes:
+        console.print(f"[green]fixed[/green] {n}")
+    for e in errors:
+        console.print(f"[red]error[/red] {e}")
+    for w in warns:
+        console.print(f"[yellow]warn[/yellow] {w}")
+    if j.invalidate_if_plan_changed():
+        console.print("[yellow]plan changed after approval → approve again[/yellow]")
+    console.print(f"{len(plan.scenes)} beats, {len(plan.shot_ids())} shots")
 
 
 @app.command()
@@ -224,7 +262,8 @@ def export(job: str, env: str = None) -> None:
 def run(job: str, env: str = None, from_: str = typer.Option(None, "--from"), until: str = typer.Option(None, "--until"),
         dry_run: bool = False, auto_approve: bool = False, force: bool = False,
         scene: list[int] = typer.Option(None, help="only these scene ids (keyframes/video stages)"),
-        reseed: int = typer.Option(0, help="re-roll the seeds of the --scene scenes (persisted per scene)")) -> None:
+        reseed: int = typer.Option(0, help="re-roll the seeds of the --scene scenes (persisted per scene)"),
+        set_: list[str] = typer.Option(None, "--set", help="override for this run only, e.g. stages.keyframes.n_candidates=1")) -> None:
     """Run a slice of the full DAG. --dry-run implies --auto-approve and stub backends."""
     root = find_root()
     j = _job(root, job)
@@ -232,7 +271,7 @@ def run(job: str, env: str = None, from_: str = typer.Option(None, "--from"), un
     if "video" in names and "tts" not in names and not (j.dir("tts") / "tts.json").exists():
         names = ["tts", *names]          # clip lengths come from narration; run tts first automatically
         console.print("[dim]tts has not run yet; running it first[/dim]")
-    ctx = make_ctx(root, j, env, dry_run, force or bool(scene), scene, reseed)
+    ctx = make_ctx(root, j, env, dry_run, force or bool(scene), scene, reseed, overrides=set_ or None)
     if set(names) & set(RENDER_STAGES + POST_STAGES):
         if j.invalidate_if_plan_changed():
             raise typer.BadParameter("plan changed after approval; re-approve")
@@ -294,7 +333,19 @@ def doctor(env: str = None) -> None:
         console.print(t)
         raise typer.Exit(1)
     sec = load_secrets()
-    row("ANTHROPIC_API_KEY", True if sec.has_claude() else None, "set" if sec.has_claude() else "missing → stub LLM")
+    backends = {cfg.stages["research"].get("backend"), cfg.stages["script"].get("backend")}
+    if "claude" in backends:
+        row("ANTHROPIC_API_KEY", sec.has_claude(), "set" if sec.has_claude() else "missing (stages use backend: claude)")
+    if backends & {"local", "ollama"}:
+        from .llm import LocalLLMError, local_llm
+
+        llm = local_llm(cfg)
+        try:
+            names = llm.installed_models()
+            have = any(n.startswith(llm.model) for n in names)
+            row(f"local LLM {llm.model}", have, f"{llm.host}" if have else "not pulled: uv run vgi llm pull")
+        except LocalLLMError as e:
+            row("local LLM (Ollama)", False, str(e)[:90])
     comfy = cfg.env.comfy
     if comfy.endpoints:
         from .backends.comfy_client import ComfyClient
@@ -392,6 +443,69 @@ def corpus_gutenberg(ebook_id: int, title: str = typer.Option(..., help="human t
     out.write_text(f"---\ntitle: {title}\nlicense: public domain (Project Gutenberg #{ebook_id})\n"
                    f"url: https://www.gutenberg.org/ebooks/{ebook_id}\n---\n\n" + body.strip() + "\n", encoding="utf-8")
     console.print(f"[green]saved[/green] {out} ({len(body)} chars)")
+
+
+def _local_llm(env: str | None):
+    from .llm import local_llm
+
+    root = find_root()
+    env = env or default_env()
+    cfg = ConfigLoader(root).load(env, ConfigLoader(root).available("topics")[0])
+    return local_llm(cfg), cfg
+
+
+@llm_app.command("status")
+def llm_status(env: str = None) -> None:
+    """Is Ollama reachable, which models are pulled, which one the pipeline will use."""
+    llm, cfg = _local_llm(env)
+    names = llm.installed_models()
+    console.print(f"host {llm.host} · configured model [bold]{llm.model}[/bold] · "
+                  f"{'[green]pulled[/green]' if any(n.startswith(llm.model) for n in names) else '[red]not pulled[/red]'}")
+    console.print(f"installed: {names}")
+    console.print(f"stage backends: research={cfg.stages['research'].get('backend')} script={cfg.stages['script'].get('backend')}")
+
+
+@llm_app.command("pull")
+def llm_pull(env: str = None, model: str = typer.Option(None, help="override configs/llm.yaml local.model")) -> None:
+    """Download the configured local model into Ollama (models/ollama on the render box)."""
+    llm, _ = _local_llm(env)
+    if model:
+        llm.model = model
+    llm.installed_models()            # fails clearly if Ollama is down
+    last = {"pct": -1}
+
+    def prog(ev):
+        total, done = ev.get("total"), ev.get("completed")
+        if total and done:
+            pct = int(done * 100 / total)
+            if pct != last["pct"] and pct % 5 == 0:
+                last["pct"] = pct
+                console.print(f"  {ev.get('status', '')[:40]} {pct}%")
+        elif ev.get("status") and ev.get("status") != last.get("status"):
+            last["status"] = ev["status"]
+            console.print(f"  {ev['status']}")
+
+    console.print(f"pulling {llm.model} ...")
+    llm.pull(prog)
+    console.print(f"[green]ready[/green] {llm.model}")
+
+
+@llm_app.command("test")
+def llm_test(env: str = None) -> None:
+    """One short structured call to check the model answers and follows a JSON schema."""
+    from pydantic import BaseModel
+
+    class Ping(BaseModel):
+        answer: str
+        number: int
+
+    llm, _ = _local_llm(env)
+    llm.ensure_model()
+    import time as _t
+
+    t0 = _t.time()
+    r = llm.parse("You answer tersely.", "Reply with answer='ok' and number=7.", Ping)
+    console.print(f"[green]ok[/green] {r.obj} in {_t.time() - t0:.1f}s ({r.usage})")
 
 
 @models_app.command("list")

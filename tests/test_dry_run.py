@@ -28,6 +28,12 @@ def test_full_dry_run(project):
     assert (info["width"], info["height"]) == (1080, 1920) and info["vcodec"] == "h264" and info["acodec"] == "aac"
     meta = json.loads((job.dir("export") / "metadata.json").read_text())
     assert meta["ai_generated"] is True
+    tl = json.loads((job.dir("captions") / "timeline.json").read_text())
+    from vgi.media.ffmpeg import video_duration
+    assert len(tl["shots"]) >= 20 and abs(info["duration"] - tl["total"]) < 0.25       # many cuts, exact length
+    assert abs(video_duration(job.dir("export") / "final.mp4") - tl["total"]) < 0.25    # video track, not just audio
+    ass = (job.dir("captions") / "captions.ass").read_text()
+    assert "Style: Title" in ass and "BADR" in ass                                    # title cards rendered
     # cache: re-running plan stages is a no-op
     rec_hash = job.record("keyframes").inputs_hash
     run_stages(ctx, ["keyframes"])

@@ -6,20 +6,14 @@ from typing import Any
 from ..core.models import WordTiming
 from ..core.stage import RunContext, Stage, StageResult
 from ..media.ass import build_ass
+from .script import load_plan
 from .tts import load_tts
-from .video import load_clips
-
-
-def timeline(clips: list[dict[str, Any]], xfade: float) -> list[dict[str, float]]:
-    """Absolute start of each segment on the final timeline (segments overlap by xfade)."""
-    t, rows = 0.0, []
-    for i, c in enumerate(clips):
-        rows.append({"scene_id": c["scene_id"], "start": round(t, 3), "seconds": c["seconds"]})
-        t += c["seconds"] - xfade
-    return rows
+from .video import timeline_for
 
 
 class CaptionsStage(Stage):
+    """Karaoke captions placed at each beat's speech start on the edit timeline, plus on-screen title cards."""
+
     name = "captions"
     requires = ("tts", "video")
 
@@ -27,22 +21,37 @@ class CaptionsStage(Stage):
         d = super().inputs(ctx)
         d["honorifics"] = [h.model_dump() for h in ctx.cfg.topic.honorifics]
         d["safe_zone"] = ctx.cfg.global_.safe_zone.model_dump()
+        d["video_pacing"] = ctx.cfg.stages.get("video", {})
+        if ctx.job.scene_plan_path.exists():
+            d["titles"] = [(s.id, s.on_screen_text) for s in load_plan(ctx).scenes]
         return d
 
     def run(self, ctx: RunContext) -> StageResult:
-        cc, vc = ctx.stage_cfg("captions"), ctx.stage_cfg("video")
+        cc = ctx.stage_cfg("captions")
         reel, sz = ctx.cfg.global_.reel, ctx.cfg.global_.safe_zone
-        clips = load_clips(ctx)
+        plan = load_plan(ctx)
         tts = {a.scene_id: a for a in load_tts(ctx)}
-        rows = timeline(clips, vc.xfade_seconds)
-        scene_words: list[tuple[float, list[WordTiming]]] = []
-        for r in rows:
-            a = tts[r["scene_id"]]
-            scene_words.append((r["start"] + vc.xfade_seconds, a.words))   # narration starts after the lead-in
+        tl = timeline_for(ctx)
+        scene_words: list[tuple[float, list[WordTiming]]] = [(b.speech_start, tts[b.beat_id].words) for b in tl.beats]
+        title_seconds = float(getattr(cc, "title_seconds", 2.6))
+        titles = []
+        beat_of = {b.beat_id: b for b in tl.beats}
+        for sc in plan.scenes:
+            if sc.on_screen_text:
+                b = beat_of[sc.id]
+                titles.append((b.start + 0.05, b.start + min(b.duration, title_seconds), sc.on_screen_text))
         ass = build_ass(scene_words, width=reel.width, height=reel.height, style=cc.style.model_dump(),
                         bottom_margin_px=sz.bottom_px, side_margin_px=sz.side_px, words_per_group=cc.words_per_group,
-                        pop_in_ms=cc.pop_in_ms, honorifics=[h.model_dump() for h in ctx.cfg.topic.honorifics])
+                        pop_in_ms=cc.pop_in_ms, honorifics=[h.model_dump() for h in ctx.cfg.topic.honorifics],
+                        uppercase=bool(getattr(cc, "uppercase", False)), titles=titles,
+                        title_style=getattr(cc, "title_style", None) or {}, top_margin_px=sz.top_px)
         out_dir = ctx.job.dir("captions")
         (out_dir / "captions.ass").write_text(ass, encoding="utf-8")
-        (out_dir / "timeline.json").write_text(json.dumps(rows, indent=2), encoding="utf-8")
+        (out_dir / "timeline.json").write_text(json.dumps({
+            "total": tl.total,
+            "beats": [{"beat_id": b.beat_id, "start": b.start, "speech_start": b.speech_start, "duration": b.duration}
+                      for b in tl.beats],
+            "shots": [{"shot_id": s.shot_id, "start": s.start, "own": s.own, "overlap": s.overlap,
+                       "transition_out": s.transition_out} for s in tl.shots],
+            "dropped": tl.dropped}, indent=2), encoding="utf-8")
         return StageResult(artifacts=["08_captions/captions.ass", "08_captions/timeline.json"])

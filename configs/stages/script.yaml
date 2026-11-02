@@ -1,11 +1,23 @@
-# Stage: script. Fact sheet / idea -> ScenePlan JSON (structured output).
-backend: claude                 # claude | stub
+# Stage: script. Two passes: a dramatic TREATMENT (free text) → a structured plan of BEATS (narration lines)
+# each with 1-3 SHOTS (camera setups). More beats + shots = faster cutting.
+backend: local                  # local | claude | stub
 model: claude-opus-5-5
 effort: high
 max_tokens: 16000
-scenes_min: 6
-scenes_max: 10
-scene_seconds_min: 4.0
-scene_seconds_max: 9.0
-max_clip_seconds: 10.0          # LTX-2.5 practical limit per clip; longer scenes are chained
+treatment: true                 # write the treatment first (better storytelling); false = structure directly
+temperature: 0.8                # creativity of the treatment (local models)
+beats_min: 10
+beats_max: 16
+shots_per_beat_max: 3
+beat_words_max: 18              # one or two short spoken sentences per beat
+total_words: 0                  # narration budget; 0 = 85% of the midpoint length x words_per_second (~150 words)
+target_seconds_min: 55
+target_seconds_max: 85
 words_per_second: 2.5
+fact_check: true                # Islamic topic: check every line against the fact sheet
+repair_rounds: 2                # send validator + fact-check problems back to the model to fix
+# pacing guards, applied mechanically after every writing/repair round
+max_pauses: 3                   # dramatic pauses are for the turn and the climax
+max_pause_seconds: 1.5
+max_titles: 5                   # on-screen title cards in the whole reel
+max_transitions: {fade: 3, fadeblack: 2, flash: 3}   # everything else is a cut

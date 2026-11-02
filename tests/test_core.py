@@ -3,7 +3,6 @@ import json
 from vgi.core.hashing import derive_seed
 from vgi.core.job import Job
 from vgi.media.ffmpeg import frames_for
-from vgi.stages.video import scene_seconds
 
 
 def test_frames_for_grid():
@@ -11,11 +10,6 @@ def test_frames_for_grid():
     assert frames_for(1.0, 25, 8) == 25        # 25 is already 8*3+1
     assert frames_for(0.0, 25, 8) == 1
     assert (frames_for(7.3, 25, 8) - 1) % 8 == 0
-
-
-def test_scene_seconds_tail_never_below_xfade():
-    assert scene_seconds(4.0, 0.4, 0.5) == 4.9
-    assert scene_seconds(4.0, 0.4, 0.1) == 4.8   # tail bumped to xfade
 
 
 def test_seed_determinism():

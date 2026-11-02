@@ -72,6 +72,20 @@ class ClaudeLLM:
         return CitedResult(text="".join(out), sources=sources, usage=usage,
                            cost_usd=claude_cost_usd(self.pricing, self.model, usage), model=self.model)
 
+    def generate(self, system: str, prompt: str, temperature: float | None = None) -> ParsedResult:
+        """Free-text pass (the dramatic treatment). Temperature is not sent: current models reject sampling params."""
+        kwargs: dict[str, Any] = dict(model=self.model, max_tokens=self.max_tokens, system=system,
+                                      messages=[{"role": "user", "content": prompt}], output_config={"effort": self.effort})
+        if self.model.startswith(("claude-opus-5", "claude-fable", "claude-sonnet-5-5")):
+            resp = self.client.beta.messages.create(betas=["server-side-fallback-2026-07-01"], fallbacks="default", **kwargs)
+        else:
+            resp = self.client.messages.create(**kwargs)
+        if resp.stop_reason == "refusal":
+            raise RuntimeError(f"Claude declined the request: {getattr(resp, 'stop_details', None)}")
+        text = "".join(b.text for b in resp.content if b.type == "text")
+        usage = _usage(resp)
+        return ParsedResult(obj=text, usage=usage, cost_usd=claude_cost_usd(self.pricing, self.model, usage), model=self.model)
+
     def parse(self, system: str, prompt: str, schema: type[T]) -> ParsedResult:
         resp = self.client.messages.parse(model=self.model, max_tokens=self.max_tokens, system=system,
                                           messages=[{"role": "user", "content": prompt}],

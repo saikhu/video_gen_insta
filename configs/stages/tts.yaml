@@ -1,7 +1,7 @@
 # Stage: tts. Narration per scene -> WAV + word timings (words.json).
 engine: stub                    # stub | kokoro | elevenlabs | fish_drama3
 voice: narrator_en              # configs/voices/<voice>.yaml
-speed: 1.0
+speed: 0.95                     # a touch slower reads as gravitas; memes can go 1.05
 sample_rate: 24000
 lexicon: configs/pronunciation/lexicon.yaml
 pause_between_sentences_ms: 250

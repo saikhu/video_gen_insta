@@ -26,7 +26,8 @@ class ExportStage(Stage):
         final = out_dir / f"{name}.mp4"
         shutil.copy2(out_dir / "final.mp4", final)
         cover_scene = next((s for s in plan.scenes if s.id == ec.cover_scene), plan.scenes[0])
-        to_cover_jpeg(ctx.job.path / chosen_keyframe(ctx, cover_scene.id, cover_scene.keyframe_choice), out_dir / "cover.jpg",
+        cover_shot = cover_scene.all_shots()[0]
+        to_cover_jpeg(ctx.job.path / chosen_keyframe(ctx, cover_scene.shot_id(0), cover_shot.keyframe_choice), out_dir / "cover.jpg",
                       reel.width, reel.height)
         caption = (ctx.job.dir("script") / "caption.txt").read_text(encoding="utf-8")
         tags = [t for t in plan.hashtags if t.startswith("#")] + [t for t in ctx.cfg.topic.hashtags if t not in plan.hashtags]

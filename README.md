@@ -3,6 +3,11 @@
 Turns a topic into a finished 9:16 Reel with cinematic visuals, narration, animated captions and a
 compliance check, entirely on your own hardware. Two content tracks ship today:
 
+Scripts are written by a **local LLM** (Ollama, `qwen3.8:27b` by default) with no API key; Claude is an
+optional backend. Each reel is a short **dramatic film**: a cold-open hook, rising stakes, a turn held on a
+pause, and a closing line that echoes the hook, cut as **10-16 narration beats with 1-3 shots each** (~20-30
+cuts a minute), title cards, per-beat transitions, and the video model's own sound swelling between lines.
+
 | track | what it makes | grounding |
 |---|---|---|
 | `islamic_battles` | documentary shorts about famous early-Islamic battles | cited fact sheet from a local, open-license corpus; strict depiction rules |
@@ -21,9 +26,10 @@ platform policy constraints and the cost/revenue verdict live in `docs/` and the
  │ cited    │   │ scene  │   │ 3 cands   │   │ preview    │ approve  │     │  │ LTX   │  │ ASS   │  │ ffmpeg   │  │ spec,  │  mp4 +
  │ facts    │   │ plan   │   │ per scene │   │ .html      │          │     │  │ 2.5   │  │karaoke│  │ xfade    │  │ faces, │  cover +
  └──────────┘   └────────┘   └───────────┘   └────────────┘          └─────┘  └───────┘  └───────┘  │ loudnorm │  │ LUFS   │  caption
-   Claude          Claude      Z-Image /       Jinja2                 Kokoro   ComfyUI    engine     └──────────┘  └────────┘
-   citations       parse()     FLUX 3 Klein                                    (Ken Burns  word
-                                                                               fallback)   timings
+   local LLM       treatment   Z-Image /       Jinja2                 Kokoro   ComfyUI    engine     └──────────┘  └────────┘
+   (Ollama) or     → beats +   FLUX 3 Klein,                                   LTX-2.5,   word
+   Claude          shots       one per shot                                    one clip   timings
+                                                                               per shot
 ```
 
 - **One job folder per video** (`outputs/jobs/<id>/`) with a `manifest.json` state machine:
@@ -35,12 +41,29 @@ platform policy constraints and the cost/revenue verdict live in `docs/` and the
 - **Degraded paths are explicit.** No ComfyUI endpoint → Ken Burns over the keyframe. ffmpeg without
   libass → captions skipped and QA fails. Silent audio → loudness pass 2 skipped and QA warns.
 
+## How a reel is structured
+
+| unit | what it is | where it is set |
+|---|---|---|
+| **beat** | one or two spoken sentences (≤ 22 words) + optional title card, transition in, dramatic pause after | `configs/stages/script.yaml` (`beats_min/max`, `beat_words_max`) |
+| **shot** | one camera setup under a beat: keyframe → 2-4 s LTX clip with its own camera move and diegetic sound | `shots_per_beat_max`, `video.min_shot_seconds` |
+| **timeline** | beat = pre-roll + narration + post-roll + pause; shots split it; transitions overlap; narration runs continuously over the cut | `core/timeline.py`, `configs/stages/video.yaml` (pacing, `transitions`) |
+| **mix** | narration on top; the clips' sound side-chain ducked under it so it swells in gaps; optional bed | `configs/stages/assemble.yaml` (`diegetic_gain_db`, `duck_*`, `grade`) |
+
+The writer works in two passes: a free-text **treatment** (`02_script/treatment.md`, shown in the
+storyboard) using the craft rules in `src/vgi/topics/craft.py`, then a structured pass into beats and shots.
+A **review-and-repair loop** follows: deterministic validators (depiction, music, shot types, density) plus,
+for history, a fact check of every line against the fact sheet; the model gets the specific problems back and
+fixes only those (`repair_rounds`, log in `02_script/review.json`).
+
 ## Status (2026-11-02)
 
 | capability | state |
 |---|---|
 | Config layer, job manifest, caching, CLI, dry-run, tests | done |
-| Research + script via Claude (citations → structured ScenePlan) | code done; needs `ANTHROPIC_API_KEY` (stub LLM otherwise) |
+| Research + script via a **local LLM** (Ollama; citations emulated by numbered sources; JSON-schema output) | verified on the Mac with `qwen2.5:14b`; the box uses `qwen3.8:27b` (`vgi llm pull`) |
+| Dramatic structure: treatment → 10-16 beats × 1-3 shots, title cards, transitions, ducked diegetic sound, film grade | **verified** on the Mac end to end (local LLM → 28 shots → Z-Image keyframes → Kokoro → assembly, QA pass); LTX render on the box pending |
+| Claude backend (optional, `backend: claude`) | code done; needs `ANTHROPIC_API_KEY` |
 | Keyframes on the Mac (mflux Z-Image Turbo, in-process) | **verified**: 768×1344, ~44 s/image, ~32 GB peak |
 | Narration (Kokoro-82M, lexicon IPA, engine word timings) | **verified** |
 | Captions (ASS karaoke, honorific → ﷺ merge, safe zones) | **verified** |
@@ -54,7 +77,7 @@ platform policy constraints and the cost/revenue verdict live in `docs/` and the
 ```bash
 brew install ffmpeg-full espeak-ng               # libass for captions; espeak for rare words
 uv python pin 3.12.15 && uv sync --extra dev --extra tts --extra mac --extra qa
-cp .env.example .env                              # add ANTHROPIC_API_KEY for real research/scripts
+ollama serve & ollama pull qwen3.8:27b            # the local writer (or set llm.local.model to one you have)
 curl -L -o models/face_detection_yunet_2023mar.onnx \
   https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx
 uv run vgi doctor
@@ -64,7 +87,8 @@ uv run vgi doctor
 uv run vgi corpus wikipedia "Battle of Badr"      # CC BY-SA text with attribution header → data/corpus/islamic/
 uv run vgi new --topic islamic_battles --subject "Battle of Badr"
 uv run vgi plan <job>                             # Part A → 04_storyboard/preview.html
-uv run vgi pick <job> 2 1                         # choose keyframe candidate 1 for scene 2
+uv run vgi pick <job> 3.2 1                       # beat 3, shot 2 → keyframe candidate 1
+uv run vgi tidy <job>                             # optional: re-apply honorific/length/pacing fixes after hand edits
 uv run vgi approve <job>
 uv run vgi render <job>                           # Part B
 uv run vgi qa <job> && uv run vgi export <job>    # → 09_final/{<job>.mp4, cover.jpg, caption.txt, metadata.json}
@@ -115,6 +139,7 @@ env) at `vgi new`, so the same job folder renders on either machine.
 | `stages/research.yaml` … `stages/publish.yaml` | one file per stage: models, steps, resolutions, candidates, xfade/tail, caption style, QA thresholds |
 | `styles/*.yaml`, `voices/*.yaml` | prompt prefix/suffix and references; narrator voice per engine |
 | `pronunciation/lexicon.yaml` | Arabic names → IPA (Kokoro inline `[Badr](/bædr/)`) and respellings |
+| `llm.yaml` | the writer: local Ollama host/model/context (default `qwen3.8:27b`, alt `gemma4:31b`) and the optional Claude model |
 | `pricing.yaml` | Claude token prices, ElevenLabs, KRW→USD for the per-reel cost in `metadata.json` |
 
 ## Repository layout
@@ -147,7 +172,7 @@ tests/                   config precedence, state machine, caching, caption math
 | video | LTX-2.5 int8_convrot (free < $10M) | synchronized native audio, portrait, first/last-frame chaining; Wan 2.2 (Apache) as fallback |
 | narration | Kokoro-82M (Apache) → Fish Drama 3 later | word timestamps for free; IPA overrides; Fish needs ~39 GB VRAM |
 | music | none (Islamic) / ACE-Step 1.5 (memes) | no instruments policy; LTX's diegetic audio carries ambience |
-| LLM | Claude Opus 5.5 ($4/$20 per MTok) | ≈ $0.18 per script; citations grounded in the corpus |
+| LLM | local `qwen3.8:27b` via Ollama (Apache 2.0, 17.7 GB, fits one 4090) | free; GPU hand-off frees ComfyUI first; Claude Opus 5.5 optional (≈ $0.25/script) |
 
 Excluded on license grounds: MiniMax H3 and HunyuanVideo 1.5 (territory restrictions incl. Korea),
 FLUX.1/2 dev (non-commercial), F5-TTS / Higgs / VibeVoice (research-only), MMAudio (NC).

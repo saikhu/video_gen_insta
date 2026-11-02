@@ -198,6 +198,15 @@ explains one box of that diagram or one line of that manifest.
 - 🧪 With an API key, run `vgi plan` on Badr, read `01_research/fact_sheet.md`, then change
   `stages/research.yaml: effort` to `medium` and compare cost and citation density.
 
+### 4.3b Local LLMs with Ollama  ⏱ 3 h
+- **Why**: the default writer runs on your own GPUs: no API key, no per-call cost. Ollama serves GGUF models over
+  HTTP; `format` = a JSON schema constrains the output to the Pydantic model; citations are emulated by numbering
+  sources and mapping `[n]` markers back.
+- 📂 `src/vgi/llm/local.py`, `configs/llm.yaml`, `scripts/ollama_serve.sh`, `vgi llm status|pull|test`
+- 📖 Ollama API docs (`/api/chat`, `format`, `keep_alive`, `options.num_ctx`); a GGUF quantization primer;
+  KV-cache memory math (layers × KV heads × head dim × context × 2 bytes).
+- 🧪 Run `vgi llm test`, then compare the treatment from `qwen3.8:27b` and `gemma4:31b` for the same subject.
+
 ### 4.4 Grounding and retrieval (keeping history honest)  ⏱ 3 h
 - **Why**: the corpus retrieval is deliberately simple (keyword-scored chunks with license headers);
   the LLM may only cite what it was given, and uncited claims must be hedged.
@@ -206,6 +215,15 @@ explains one box of that diagram or one line of that manifest.
   Wikipedia's reuse/attribution rules (CC BY-SA 4.0).
 - 🧪 Replace keyword scoring with embeddings (any small local model) and measure whether the fact
   sheet's citations improve for "Battle of Yarmouk".
+
+### 4.5a Short-form storytelling and editing  ⏱ 4 h
+- **Why**: retention is decided in the first 1.5 s and by cut rhythm. The craft rules (cold open, stakes, escalation,
+  the turn, callback ending) and the beat/shot timeline encode this.
+- 📂 `src/vgi/topics/craft.py`, `src/vgi/core/timeline.py`, `configs/stages/video.yaml` (pacing), `assemble.yaml` (ducking)
+- 📖 Walter Murch, *In the Blink of an Eye* (why cuts work); any screenwriting primer on the three-act structure;
+  side-chain compression in audio mixing.
+- 🧪 Change `pause_after` on the turn beat from 0.8 to 1.6 and `duck_release_ms` from 450 to 900; watch how the
+  moment lands differently.
 
 ### 4.5 Prompt design for images and video  ⏱ 2 h
 - 📂 `configs/styles/cinematic_desert.yaml`, `stages/keyframes.py::build_prompt`, the `visuals` list in `llm/stub.py`

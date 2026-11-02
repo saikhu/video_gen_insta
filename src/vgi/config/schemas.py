@@ -56,12 +56,26 @@ class ScriptCfg(_Open):
     model: str = "claude-opus-5-5"
     effort: str = "high"
     max_tokens: int = 16000
-    scenes_min: int = 6
-    scenes_max: int = 10
-    scene_seconds_min: float = 4.0
-    scene_seconds_max: float = 9.0
-    max_clip_seconds: float = 10.0
+    beats_min: int = 10
+    beats_max: int = 16
+    shots_per_beat_max: int = 3
+    beat_words_max: int = 22
+    target_seconds_min: float = 55
+    target_seconds_max: float = 85
     words_per_second: float = 2.5
+    treatment: bool = True           # write a dramatic treatment first, then structure it
+    total_words: int = 0             # narration budget; 0 = derive from target seconds
+    max_pauses: int = 3
+    max_pause_seconds: float = 1.5
+    max_titles: int = 5
+    max_transitions: dict[str, int] = Field(default_factory=lambda: {"fade": 3, "fadeblack": 2, "flash": 3})
+    fact_check: bool = True
+    repair_rounds: int = 2
+    temperature: float = 0.8         # creative pass (local models)
+    # legacy names kept so old configs still validate
+    scenes_min: int = 6
+    scenes_max: int = 16
+    max_clip_seconds: float = 10.0
 
 
 class StoryboardCfg(_Open):
@@ -72,7 +86,7 @@ class StoryboardCfg(_Open):
 class KeyframesCfg(_Open):
     backend: str = "stub"
     model: str = "z_image_turbo"
-    n_candidates: int = 3
+    n_candidates: int = 2
     gen_width: int = 768
     gen_height: int = 1344
     steps: int = 8
@@ -108,6 +122,14 @@ class VideoCfg(_Open):
     ken_burns: KenBurnsCfg = Field(default_factory=KenBurnsCfg)
     workflow_i2v: str = "video_ltx25_i2v"
     workflow_flf2v: str = "video_ltx25_flf2v"
+    # edit pacing (core/timeline.py)
+    pre_roll: float = 0.12
+    first_pre_roll: float = 0.3
+    post_roll: float = 0.25
+    min_shot_seconds: float = 1.6
+    transitions: dict[str, float] = Field(default_factory=lambda: {"cut": 0.04, "fade": 0.35, "fadeblack": 0.6, "flash": 0.25})
+    sound_in_prompt: bool = True     # append each shot's sound_prompt to the video prompt (LTX generates audio)
+    audio_negative: str = ""         # appended to the video negative prompt (e.g. "music, singing")
 
 
 class TtsCfg(_Open):
@@ -248,6 +270,7 @@ class MergedConfig(BaseModel):
     voice: dict[str, Any]
     lexicon: dict[str, Any]
     pricing: dict[str, Any]
+    llm: dict[str, Any] = Field(default_factory=dict)
     overrides: list[str] = Field(default_factory=list)
 
     def stage(self, name: str) -> BaseModel:
@@ -262,5 +285,6 @@ class MergedConfig(BaseModel):
             "style": self.style,
             "voice": self.voice,
             "lexicon": self.lexicon,
+            "llm": self.llm,
             "overrides": self.overrides,
         }
