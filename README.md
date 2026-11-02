@@ -85,6 +85,9 @@ curl -L -o models/face_detection_yunet_2023mar.onnx \
 uv run vgi doctor
 ```
 
+On the Linux CUDA boxes, drop `--extra mac`: `uv sync --extra dev --extra tts --extra qa`. A bare `uv sync`
+removes the extras again (kokoro then fails at the tts stage), so always pass them.
+
 ```bash
 uv run vgi corpus wikipedia "Battle of Badr"      # CC BY-SA text with attribution header → data/corpus/islamic/
 uv run vgi new --topic islamic_battles --subject "Battle of Badr"
@@ -245,7 +248,7 @@ DRY_RUN=1 scripts/story_chapters.sh auto 1 2   # optional: placeholder chapters 
 scripts/story_chapters.sh plan 1 4             # Part A for ch01-ch04: brief → script → keyframes → storyboard
 # review each outputs/jobs/<id>/04_storyboard/preview.html; fix shots, then approve:
 uv run vgi pick <id> 3.2 1                     # beat 3, shot 2 → keyframe candidate 1
-uv run vgi approve <id>
+scripts/story_chapters.sh approve 1 4          # approve every planned chapter in the range (or `uv run vgi approve <id>`)
 scripts/story_chapters.sh render 1 4           # Part B in order: render → qa → export; stops at the first gap
 scripts/story_chapters.sh status               # chapter → job id → state, all 16
 ```

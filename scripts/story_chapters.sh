@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Generate a serial story's chapters in order, one vgi job per chapter (subject ch01, ch02, …).
 #
-#   scripts/story_chapters.sh plan   [FROM] [TO]   Part A for each chapter: new job (or reuse) → script → keyframes → storyboard
-#   scripts/story_chapters.sh render [FROM] [TO]   Part B for each chapter in order: render → qa → export (needs `vgi approve`)
+#   scripts/story_chapters.sh plan    [FROM] [TO]  Part A for each chapter: new job (or reuse) → script → keyframes → storyboard
+#   scripts/story_chapters.sh approve [FROM] [TO]  approve every reviewed (planned) chapter in the range in one go
+#   scripts/story_chapters.sh render  [FROM] [TO]  Part B for each chapter in order: render → qa → export (needs approval)
 #   scripts/story_chapters.sh auto   [FROM] [TO]   everything unattended, auto-approving each plan (no human review)
 #   scripts/story_chapters.sh status [FROM] [TO]   chapter → job id → state
 #
@@ -65,7 +66,18 @@ case "$cmd" in
       uv run vgi plan "$id" $(dry)
     done
     echo "Review each storyboard (outputs/jobs/<id>/04_storyboard/preview.html), fix shots with"
-    echo "\`uv run vgi pick <id> <beat.shot> <candidate>\`, then \`uv run vgi approve <id>\` and run: $0 render $FROM $TO"
+    echo "\`uv run vgi pick <id> <beat.shot> <candidate>\`, then run: $0 approve $FROM $TO && $0 render $FROM $TO"
+    ;;
+  approve)
+    for ((n = FROM; n <= TO; n++)); do
+      s=$(printf 'ch%02d' "$n"); found=$(job_for "$s"); id="${found%% *}"; state="${found##* }"
+      case "$state" in
+        planned|approved) printf '== %s  ' "$s"; uv run vgi approve "$id" ;;   # approved: re-record the hash after a late `vgi pick`
+        "") echo "$s has no job; run: $0 plan $n" >&2; exit 1 ;;
+        created) echo "$s ($id) is not planned yet; run: $0 plan $n" >&2; exit 1 ;;
+        *) echo "== $s  $id: $state, already past approval" ;;
+      esac
+    done
     ;;
   render)
     for ((n = FROM; n <= TO; n++)); do
@@ -101,5 +113,5 @@ case "$cmd" in
     done
     ;;
   *)
-    sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+    sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac
